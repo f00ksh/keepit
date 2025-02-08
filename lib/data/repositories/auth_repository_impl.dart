@@ -2,13 +2,13 @@
 
 import 'package:keepit/domain/models/user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/services/auth_service.dart';
+import '../../domain/repositories/auth_service_repository.dart';
 import '../../core/constants/app_constants.dart';
 
-class SupabaseAuthService implements AuthService {
+class AuthRepositoryImpl implements AuthServiceRepository {
   final SupabaseClient _client;
 
-  SupabaseAuthService(this._client);
+  AuthRepositoryImpl(this._client);
 
   @override
   Future<AppUser?> getCurrentUser() async {
@@ -112,5 +112,48 @@ class SupabaseAuthService implements AuthService {
       print('Auth state changed: ${event.event}, User: ${user?.email}');
       return user == null ? null : AppUser.fromJson(user.toJson());
     });
+  }
+
+  @override
+  Future<AppUser> signInWithEmail(String email, String password) async {
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+      if (user == null) throw Exception('User not found after sign in');
+
+      await _createOrUpdateUserProfile(user);
+      return AppUser.fromJson(user.toJson());
+    } catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
+  @override
+  Future<AppUser> signUpWithEmail(String email, String password) async {
+    try {
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+      if (user == null) throw Exception('User not found after sign up');
+
+      await _createOrUpdateUserProfile(user);
+      return AppUser.fromJson(user.toJson());
+    } catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
+  Exception _handleAuthError(dynamic error) {
+    if (error is AuthException) {
+      return Exception('Authentication failed: ${error.message}');
+    }
+    return Exception('Authentication failed: ${error.toString()}');
   }
 }

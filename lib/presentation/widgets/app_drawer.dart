@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keepit/presentation/providers/auth_provider.dart';
+import 'package:keepit/data/providers/auth_provider.dart';
 import 'package:keepit/presentation/widgets/navigation_drawer_destination_item.dart';
-import 'package:keepit/presentation/widgets/loading_overlay.dart';
 import 'package:keepit/core/utils/error_handler.dart';
 
 class AppDrawer extends ConsumerWidget {

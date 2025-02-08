@@ -1,12 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../services/storage_service.dart';
-import '../services/supabase_service.dart';
+import '../services/hive_stoarge_service.dart';
+import '../services/supabase_stoarge_service.dart';
 import '../services/sync_service.dart';
 import '../repositories/note_repository_impl.dart';
 import '../../domain/repositories/note_repository.dart';
-import '../../domain/services/auth_service.dart';
+import '../../domain/repositories/auth_service_repository.dart';
 
-part 'storage_providers.g.dart';
+part 'supabase_providers.g.dart';
 
 @riverpod
 StorageService storageService(ref) {
@@ -33,6 +33,6 @@ NoteRepository noteRepository(ref) {
 }
 
 @riverpod
-AuthService authService(ref) {
+AuthServiceRepository authService(ref) {
   throw UnimplementedError('Should be overridden in main');
 }

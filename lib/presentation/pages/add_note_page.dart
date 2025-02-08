@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/theme/app_theme.dart';
-import 'package:keepit/data/providers/storage_providers.dart';
+import 'package:keepit/data/providers/supabase_providers.dart';
 import 'package:keepit/presentation/providers/add_note_provider.dart';
-import 'package:keepit/presentation/providers/notes_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
 
 class AddNotePage extends ConsumerWidget {

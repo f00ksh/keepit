@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/note.dart';
-import '../../data/providers/storage_providers.dart';
+import 'supabase_providers.dart';
 import 'dart:async';
 
 part 'notes_provider.g.dart';
@@ -109,6 +109,11 @@ class Notes extends _$Notes {
     ref.invalidateSelf();
   }
 
+  Future<Note?> getNoteById(String noteId) async {
+    final notes = await future; // Access the fetched notes
+    return notes.firstWhere((note) => note.id == noteId);
+  }
+
   // Don't forget to cancel the timer when the provider is disposed
 
   void onDispose() {
@@ -116,20 +121,8 @@ class Notes extends _$Notes {
   }
 }
 
+// Add a convenience provider for single note
 @riverpod
-class PinnedNotes extends _$PinnedNotes {
-  @override
-  Future<List<Note>> build() async {
-    final notes = await ref.watch(notesProvider.future);
-    return notes.where((note) => note.isPinned).toList();
-  }
-}
-
-@riverpod
-class UnpinnedNotes extends _$UnpinnedNotes {
-  @override
-  Future<List<Note>> build() async {
-    final notes = await ref.watch(notesProvider.future);
-    return notes.where((note) => !note.isPinned).toList();
-  }
+Future<Note> note( ref, String id) {
+  return ref.watch(notesProvider.notifier).getNote(id);
 }

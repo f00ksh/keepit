@@ -1,5 +1,5 @@
-import 'storage_service.dart';
-import 'supabase_service.dart';
+import 'hive_stoarge_service.dart';
+import 'supabase_stoarge_service.dart';
 
 class SyncService {
   final StorageService _localStorage;

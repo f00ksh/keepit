@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:keepit/core/constants/app_constants.dart';
-import 'package:keepit/data/providers/storage_providers.dart';
-import 'package:keepit/data/services/storage_service.dart';
-import 'package:keepit/data/services/supabase_service.dart';
+import 'package:keepit/data/providers/supabase_providers.dart';
+import 'package:keepit/data/services/hive_stoarge_service.dart';
+import 'package:keepit/data/services/supabase_stoarge_service.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'data/services/supabase_auth_service.dart';
+import 'data/repositories/auth_repository_impl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,11 +27,9 @@ void main() async {
 
   final storageService = StorageService();
   await storageService.init();
-
   final supabaseService = SupabaseService(Supabase.instance.client);
   await supabaseService.init();
-
-  final authService = SupabaseAuthService(Supabase.instance.client);
+  final authService = AuthRepositoryImpl(Supabase.instance.client);
 
   runApp(
     ProviderScope(

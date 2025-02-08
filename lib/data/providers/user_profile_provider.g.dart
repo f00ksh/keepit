@@ -1,24 +1,25 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'auth_provider.dart';
+part of 'user_profile_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authHash() => r'1b7a2d8474fca061546fc5bd1622a43a13dd85be';
+String _$userProfileHash() => r'a5addf134ac1301f449348a1e84e82ed3593e4b7';
 
-/// See also [Auth].
-@ProviderFor(Auth)
-final authProvider = AutoDisposeStreamNotifierProvider<Auth, AppUser?>.internal(
-  Auth.new,
-  name: r'authProvider',
+/// See also [UserProfile].
+@ProviderFor(UserProfile)
+final userProfileProvider =
+    AutoDisposeAsyncNotifierProvider<UserProfile, UserProfile?>.internal(
+  UserProfile.new,
+  name: r'userProfileProvider',
   debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$authHash,
+      const bool.fromEnvironment('dart.vm.product') ? null : _$userProfileHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$Auth = AutoDisposeStreamNotifier<AppUser?>;
+typedef _$UserProfile = AutoDisposeAsyncNotifier<UserProfile?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

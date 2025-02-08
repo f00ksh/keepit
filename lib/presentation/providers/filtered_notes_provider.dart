@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/note.dart';
-import 'notes_provider.dart';
+import '../../data/providers/notes_provider.dart';
 
 part 'filtered_notes_provider.g.dart';
 

@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:keepit/domain/models/note.dart';
-import 'package:keepit/presentation/providers/notes_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 part 'note_view_provider.g.dart';
 
 @riverpod

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/domain/models/note.dart';
-import 'package:keepit/presentation/providers/notes_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 
 class NoteActions extends ConsumerWidget {
   final Note note;

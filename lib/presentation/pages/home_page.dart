@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
-import 'package:keepit/presentation/providers/notes_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/presentation/widgets/async_note_grid.dart';
 import 'package:keepit/presentation/widgets/base_notes_page.dart';
 import 'package:keepit/presentation/widgets/add_note_button.dart';

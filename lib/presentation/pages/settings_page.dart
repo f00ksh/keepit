@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keepit/presentation/providers/auth_provider.dart';
+import 'package:keepit/data/providers/auth_provider.dart';
 import 'package:keepit/core/routes/app_router.dart';
 
 class SettingsPage extends ConsumerWidget {

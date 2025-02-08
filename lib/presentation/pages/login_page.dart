@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
+import '../../data/providers/auth_provider.dart';
 import 'home_page.dart';
 
 class LoginPage extends ConsumerWidget {

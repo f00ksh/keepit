@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'storage_providers.dart';
+part of 'supabase_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -73,11 +73,11 @@ final noteRepositoryProvider = Provider<NoteRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef NoteRepositoryRef = ProviderRef<NoteRepository>;
-String _$authServiceHash() => r'78a4255c29384ec40887cf418b87a3c2c1f50f53';
+String _$authServiceHash() => r'fdc04da713fcd846738693e8db5666d07e227473';
 
 /// See also [authService].
 @ProviderFor(authService)
-final authServiceProvider = AutoDisposeProvider<AuthService>.internal(
+final authServiceProvider = AutoDisposeProvider<AuthServiceRepository>.internal(
   authService,
   name: r'authServiceProvider',
   debugGetCreateSourceHash:
@@ -88,6 +88,6 @@ final authServiceProvider = AutoDisposeProvider<AuthService>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef AuthServiceRef = AutoDisposeProviderRef<AuthService>;
+typedef AuthServiceRef = AutoDisposeProviderRef<AuthServiceRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

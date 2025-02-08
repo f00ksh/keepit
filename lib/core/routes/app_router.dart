@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/pages/archive_page.dart';
 import 'package:keepit/presentation/pages/favorites_page.dart';
 import 'package:keepit/presentation/pages/home_page.dart';
@@ -7,8 +8,8 @@ import 'package:keepit/presentation/pages/login_page.dart';
 import 'package:keepit/presentation/pages/settings_page.dart';
 import 'package:keepit/presentation/pages/trash_page.dart';
 import 'package:keepit/presentation/pages/add_note_page.dart';
-import 'package:keepit/presentation/pages/note_page.dart';
-import 'package:keepit/presentation/providers/auth_provider.dart';
+import 'package:keepit/presentation/pages/note_view_page.dart';
+import 'package:keepit/data/providers/auth_provider.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -45,9 +46,9 @@ class AppRouter {
     AppRoutes.settings: (context) => const SettingsPage(),
     AppRoutes.addNote: (context) => const AddNotePage(),
     AppRoutes.note: (context) {
-      final noteId = ModalRoute.of(context)?.settings.arguments as String?;
-      if (noteId == null) return const HomePage();
-      return NotePage(noteId: noteId);
+      final note = ModalRoute.of(context)?.settings.arguments as Note?;
+      if (note == null) return const HomePage();
+      return NotePage(note: note);
     },
   };
 
