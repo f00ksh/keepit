@@ -3,6 +3,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/core/utils/error_handler.dart';
 import 'package:keepit/domain/models/note.dart';
+import 'package:keepit/presentation/widgets/note_hero.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -11,32 +12,51 @@ class NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          try {
-            onTap?.call();
-          } catch (e) {
-            ErrorHandler.showError(
-              context,
-              ErrorHandler.getErrorMessage(e),
-            );
-          }
-        },
-        child: SizedBox(
-          width: double.infinity,
-          child: Card(
-            elevation: 0,
-            color: getNoteColor(context, note.colorIndex),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: _buildNoteContent(),
+    final noteColor = getNoteColor(context, note.colorIndex);
+    final cardContent = Padding(
+      padding: const EdgeInsets.all(12),
+      child: _buildNoteContent(),
+    );
+
+    return NoteHeroWidget(
+        tag: 'note_${note.id}',
+        child: Material(
+          child: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: double.infinity,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    try {
+                      onTap?.call();
+                    } catch (e) {
+                      ErrorHandler.showError(
+                        context,
+                        ErrorHandler.getErrorMessage(e),
+                      );
+                    }
+                  },
+                  child: noteColor == null
+                      ? Card.outlined(
+                          elevation: 0,
+                          child: cardContent,
+                        )
+                      : Card(
+                          elevation: 0,
+                          color: noteColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: cardContent,
+                        ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   /// Builds the note content (title and body).

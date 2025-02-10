@@ -137,7 +137,7 @@ class _AddNotePageState extends ConsumerState<AddNotePage> {
     );
   }
 
-  Color _getNoteColor(BuildContext context, int index) {
+  Color? _getNoteColor(BuildContext context, int index) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = isDark ? AppTheme.darkColors : AppTheme.lightColors;
     return colors[index];

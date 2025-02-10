@@ -26,6 +26,7 @@ class StorageService {
   }
 
   Future<void> deleteNote(String id) async {
+    // Now only used for permanent deletion
     await _notesBox.delete(id);
   }
 
@@ -39,5 +40,19 @@ class StorageService {
 
   Future<void> clearAll() async {
     await _notesBox.clear();
+  }
+
+  Future<void> moveToTrash(String id) async {
+    final note = await getNoteById(id);
+    if (note != null) {
+      final trashedNote = note.copyWith(
+        isDeleted: true,
+        isPinned: false,
+        isFavorite: false,
+        isArchived: false,
+        updatedAt: DateTime.now(),
+      );
+      await updateNote(trashedNote);
+    }
   }
 }

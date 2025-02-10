@@ -47,7 +47,7 @@ class Notes extends _$Notes {
     state = await AsyncValue.guard(() async {
       // Always save locally first
       await ref.read(storageServiceProvider).addNote(note);
-      
+
       // Try to sync if user is authenticated
       final user = ref.read(authProvider).valueOrNull;
       if (user != null && !user.isAnonymous) {
@@ -68,7 +68,7 @@ class Notes extends _$Notes {
     state = await AsyncValue.guard(() async {
       // Update locally first
       await ref.read(storageServiceProvider).updateNote(updatedNote);
-      
+
       // Try to sync if user is authenticated
       final user = ref.read(authProvider).valueOrNull;
       if (user != null && !user.isAnonymous) {
@@ -88,7 +88,7 @@ class Notes extends _$Notes {
     state = await AsyncValue.guard(() async {
       // Delete locally first
       await ref.read(storageServiceProvider).deleteNote(id);
-      
+
       // Try to sync if user is authenticated
       final user = ref.read(authProvider).valueOrNull;
       if (user != null && !user.isAnonymous) {
@@ -130,12 +130,27 @@ class Notes extends _$Notes {
     ref.invalidateSelf();
   }
 
-  Future<void> moveToTrash(String noteId) async {
-    await ref.read(supabaseServiceProvider).updateNoteStatus(
-          noteId,
-          isDeleted: true,
-        );
-    ref.invalidateSelf();
+  Future<void> moveToTrash(String id) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      // Soft delete locally
+      await ref.read(storageServiceProvider).moveToTrash(id);
+
+      // Try to update in Supabase if authenticated
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        try {
+          await ref.read(supabaseServiceProvider).updateNoteStatus(
+                id,
+                isDeleted: true,
+              );
+        } catch (e) {
+          // Continue anyway as we have local copy
+        }
+      }
+
+      return ref.read(storageServiceProvider).getAllNotes();
+    });
   }
 
   Future<void> restoreFromTrash(String noteId) async {
@@ -146,9 +161,24 @@ class Notes extends _$Notes {
     ref.invalidateSelf();
   }
 
-  Future<void> deletePermanently(String noteId) async {
-    await ref.read(supabaseServiceProvider).deleteNotePermanently(noteId);
-    ref.invalidateSelf();
+  Future<void> deletePermanently(String id) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      // Delete from local storage
+      await ref.read(storageServiceProvider).deleteNote(id);
+
+      // Try to delete from Supabase if authenticated
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        try {
+          await ref.read(supabaseServiceProvider).deleteNotePermanently(id);
+        } catch (e) {
+          // Continue anyway as we deleted locally
+        }
+      }
+
+      return ref.read(storageServiceProvider).getAllNotes();
+    });
   }
 
   Future<void> togglePin(String noteId, bool isPinned) async {
@@ -163,16 +193,7 @@ class Notes extends _$Notes {
     return notes.firstWhere((note) => note.id == noteId);
   }
 
- 
-
-
   void dispose() {
     _syncTimer?.cancel();
-    
   }
-}
-
-@riverpod
-Future<Note?> note( ref, String id) async {
-  return ref.read(storageServiceProvider).getNoteById(id);
 }

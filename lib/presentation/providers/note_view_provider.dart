@@ -1,84 +1,96 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
+
 part 'note_view_provider.g.dart';
 
-/// Provider for managing the state and operations of a single note view
+/// Provider for managing a single note's state while being viewed/edited
 @riverpod
 class NoteView extends _$NoteView {
+  bool _isDirty = false;
+
   @override
-  Future<Note> build(String noteId) async {
-    // Watch notesProvider to keep note in sync with the main notes list
-    final notes = await ref.watch(notesProvider.future);
-    // Find and return the specific note by ID
-    return notes.firstWhere((note) => note.id == noteId);
+  Note build(String noteId) {
+    // Get initial note state
+    final note = ref.read(notesProvider).valueOrNull?.firstWhere(
+          (note) => note.id == noteId,
+          orElse: () => throw Exception('Note not found'),
+        );
+
+    if (note == null) throw Exception('Note not found');
+    return note;
   }
 
-  /// Updates the title of the current note optimistically
-  Future<void> updateTitle(String title) async {
-    final currentNote = state.value;
-    if (currentNote == null) return;
-    final updatedNote = currentNote.copyWith(
+  void updateTitle(String title) {
+    if (state.title == title) return;
+    state = state.copyWith(
       title: title,
       updatedAt: DateTime.now(),
     );
-    await _updateNote(updatedNote);
+    _isDirty = true;
   }
 
-  /// Updates the content of the current note optimistically
-  Future<void> updateContent(String content) async {
-    final currentNote = state.value;
-    if (currentNote == null) return;
-    final updatedNote = currentNote.copyWith(
+  void updateContent(String content) {
+    if (state.content == content) return;
+    state = state.copyWith(
       content: content,
       updatedAt: DateTime.now(),
     );
-    await _updateNote(updatedNote);
+    _isDirty = true;
   }
 
-  /// Toggles the pinned state of the current note optimistically
-  Future<void> togglePin() async {
-    final currentNote = state.value;
-    if (currentNote == null) return;
-    final updatedNote = currentNote.copyWith(
-      isPinned: !currentNote.isPinned,
+  void togglePin() {
+    state = state.copyWith(
+      isPinned: !state.isPinned,
       updatedAt: DateTime.now(),
     );
-    await _updateNote(updatedNote);
+    _isDirty = true;
   }
 
-  /// Toggles the favorite state of the current note optimistically
-  Future<void> toggleFavorite() async {
-    final currentNote = state.value;
-    if (currentNote == null) return;
-    final updatedNote = currentNote.copyWith(
-      isFavorite: !currentNote.isFavorite,
+  void toggleFavorite() {
+    state = state.copyWith(
+      isFavorite: !state.isFavorite,
       updatedAt: DateTime.now(),
     );
-    await _updateNote(updatedNote);
+    _isDirty = true;
   }
 
-  /// Updates the color of the current note optimistically
-  Future<void> updateColor(int colorIndex) async {
-    final currentNote = state.value;
-    if (currentNote == null) return;
-    final updatedNote = currentNote.copyWith(
+  void updateColorIndex(int colorIndex) {
+    state = state.copyWith(
       colorIndex: colorIndex,
       updatedAt: DateTime.now(),
     );
-    await _updateNote(updatedNote);
+    _isDirty = true;
   }
 
-  /// Private helper that updates the note optimistically.
-  Future<void> _updateNote(Note updatedNote) async {
-    // Update local state to keep UI in data mode.
-    state = AsyncData(updatedNote);
+  void toggleArchive() {
+    state = state.copyWith(
+      isArchived: !state.isArchived,
+      isPinned: false, // Unpin when archiving
+      updatedAt: DateTime.now(),
+    );
+    _isDirty = true;
+  }
+
+  void moveToTrash() {
+    state = state.copyWith(
+      isDeleted: !state.isDeleted,
+      updatedAt: DateTime.now(),
+    );
+    _isDirty = true;
+  }
+
+  Future<void> saveChanges() async {
+    if (!_isDirty) return;
+
     try {
-      await ref.read(notesProvider.notifier).updateNote(updatedNote.id, updatedNote);
-      // Optionally, you might re-read and update state here upon successful persistence.
-    } catch (e, stack) {
-      state = AsyncError(e, stack);
-      // Optionally, restore previous note if needed.
+      // Save through notes provider
+      await ref.read(notesProvider.notifier).updateNote(state.id, state);
+      _isDirty = false;
+    } catch (e) {
+      print('Error saving note: $e');
     }
   }
+
+  bool get hasUnsavedChanges => _isDirty;
 }

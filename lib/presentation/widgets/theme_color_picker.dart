@@ -15,6 +15,7 @@ class ThemeColorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = isDark ? AppTheme.darkColors : AppTheme.lightColors;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,6 +32,7 @@ class ThemeColorPicker extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: colors.length,
             itemBuilder: (context, index) {
+              final color = colors[index];
               return GestureDetector(
                 onTap: () => onColorSelected(index),
                 child: Container(
@@ -38,14 +40,16 @@ class ThemeColorPicker extends StatelessWidget {
                   height: 40,
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: colors[index],
+                    color: color ?? colorScheme.surface,
                     shape: BoxShape.circle,
-                    border: selectedIndex == index
-                        ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 2,
-                          )
-                        : null,
+                    border: Border.all(
+                      color: selectedIndex == index
+                          ? colorScheme.primary
+                          : color == null
+                              ? colorScheme.outline.withOpacity(0.12)
+                              : Colors.transparent,
+                      width: selectedIndex == index ? 2 : 1,
+                    ),
                   ),
                 ),
               );

@@ -15,7 +15,7 @@ class AppThemeMode extends _$AppThemeMode {
 @riverpod
 class NoteColors extends _$NoteColors {
   @override
-  List<Color> build() {
+  List<Color?> build() {
     final isDark = switch (ref.watch(appThemeModeProvider)) {
       ThemeMode.dark => true,
       ThemeMode.light => false,
@@ -26,4 +26,16 @@ class NoteColors extends _$NoteColors {
 
     return isDark ? AppTheme.darkColors : AppTheme.lightColors;
   }
+
+  Color? getNoteColor(int colorIndex) {
+    if (colorIndex == AppTheme.noColorIndex) return null;
+    if (colorIndex < 0 || colorIndex >= state.length) return null;
+    return state[colorIndex];
+  }
+}
+
+// Add a convenience provider for getting note colors
+@riverpod
+Color? noteColor(ref, int colorIndex) {
+  return ref.watch(noteColorsProvider.notifier).getNoteColor(colorIndex);
 }

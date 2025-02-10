@@ -6,6 +6,6 @@ class AppConstants {
   static const appName = 'KeepIT';
   static const maxTitleLength = 100;
   static const maxContentLength = 2000;
-  static const defaultNoteColorIndex = 0;
+  static const defaultNoteColorIndex = -1; // Update to use no color as default
   static const String redirectUrl = 'io.supabase.keepit://login-callback/';
 }

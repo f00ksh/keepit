@@ -28,6 +28,7 @@ class BaseNotesPage extends ConsumerStatefulWidget {
 
 class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
   late bool showNavigationDrawer;
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void didChangeDependencies() {
@@ -36,40 +37,52 @@ class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
   }
 
   @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: !showNavigationDrawer && widget.showDrawer
-          ? AppDrawer(
-              currentIndex: widget.currentIndex,
-              onDestinationSelected: widget.onDestinationSelected ?? (_) {},
-            )
-          : null,
-      body: Row(
-        children: [
-          if (showNavigationDrawer && widget.showDrawer)
-            NavigationRail(
-              extended: MediaQuery.of(context).size.width >= 840,
-              destinations: destinations
-                  .map((d) => NavigationRailDestination(
-                        icon: d.icon,
-                        selectedIcon: d.selectedIcon,
-                        label: Text(d.label),
-                      ))
-                  .toList(),
-              selectedIndex: widget.currentIndex,
-              onDestinationSelected: widget.onDestinationSelected ?? (_) {},
+    return GestureDetector(
+      onTap: () => _searchFocusNode.unfocus(),
+      child: Scaffold(
+        drawer: !showNavigationDrawer && widget.showDrawer
+            ? AppDrawer(
+                currentIndex: widget.currentIndex,
+                onDestinationSelected: widget.onDestinationSelected ?? (_) {},
+              )
+            : null,
+        body: Row(
+          children: [
+            if (showNavigationDrawer && widget.showDrawer)
+              NavigationRail(
+                extended: MediaQuery.of(context).size.width >= 840,
+                destinations: destinations
+                    .map((d) => NavigationRailDestination(
+                          icon: d.icon,
+                          selectedIcon: d.selectedIcon,
+                          label: Text(d.label),
+                        ))
+                    .toList(),
+                selectedIndex: widget.currentIndex,
+                onDestinationSelected: widget.onDestinationSelected ?? (_) {},
+              ),
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  AppSearchBar(
+                    isSearchActive: false,
+                    focusNode: _searchFocusNode,
+                  ),
+                  widget.content,
+                ],
+              ),
             ),
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                const AppSearchBar(isSearchActive: false),
-                widget.content,
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
+        floatingActionButton: widget.floatingActionButton,
       ),
-      floatingActionButton: widget.floatingActionButton,
     );
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const noColorIndex = -1;
+
   static final lightColors = [
+    null, // No color option
     const Color(0xfffaafa9),
     const Color(0xfff29f75),
     const Color(0xfffff8b8),
@@ -15,6 +18,7 @@ class AppTheme {
   ];
 
   static final darkColors = [
+    null, // No color option
     const Color(0xff76172d),
     const Color(0xff692917),
     const Color(0xff7c4a03),
@@ -44,7 +48,8 @@ class AppTheme {
       );
 }
 
-Color getNoteColor(BuildContext context, int colorIndex) {
+Color? getNoteColor(BuildContext context, int colorIndex) {
+  if (colorIndex == AppTheme.noColorIndex) return null;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final colors = isDark ? AppTheme.darkColors : AppTheme.lightColors;
   return colors[colorIndex];

@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/presentation/providers/search_provider.dart';
+import 'package:keepit/data/providers/auth_provider.dart';
 
 class AppSearchBar extends ConsumerWidget {
   final bool isSearchActive;
-  const AppSearchBar({super.key, required this.isSearchActive});
+  final FocusNode? focusNode;
+
+  const AppSearchBar({
+    super.key,
+    required this.isSearchActive,
+    this.focusNode,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider).valueOrNull;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       sliver: SliverAppBar(
@@ -21,20 +31,18 @@ class AppSearchBar extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             SearchBar(
+              focusNode: focusNode,
               onChanged: (value) =>
                   ref.read(searchQueryProvider.notifier).update(value),
-
-  leading: Builder(
-        builder: (context) => IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
-              // leading: IconButton(
-              //   icon: const Icon(Icons.arrow_back),
-              //   onPressed: () =>
-              //       ref.read(searchActiveProvider.notifier).toggle(),
-              // ),
+              leading: Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () {
+                    focusNode?.unfocus();
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
+              ),
               constraints: const BoxConstraints.tightFor(height: 47),
               hintText: 'Search notes...',
               elevation: const WidgetStatePropertyAll(3),
@@ -42,10 +50,31 @@ class AppSearchBar extends ConsumerWidget {
               padding: const WidgetStatePropertyAll(
                   EdgeInsets.symmetric(horizontal: 9)),
               trailing: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () =>
-                      ref.read(searchQueryProvider.notifier).update(''),
+                InkWell(
+                  onTap: () {
+                    focusNode?.unfocus();
+                    Navigator.of(context).pushNamed('/settings');
+                  },
+                  customBorder: const CircleBorder(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: user?.photoUrl != null
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(user!.photoUrl!),
+                            radius: 16,
+                          )
+                        : CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer,
+                            radius: 16,
+                            child: Text(
+                              user?.name?.substring(0, 1).toUpperCase() ?? 'G',
+                              style: TextStyle(
+                                color: colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                  ),
                 ),
               ],
             ),
