@@ -6,7 +6,7 @@ part of 'filtered_notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$favoriteNotesHash() => r'b0436b106c0516c246588849554a2509f8f4ac13';
+String _$favoriteNotesHash() => r'fd6ac4ea5081cd582a9c5faaa9f4cf9ace6e4f35';
 
 /// See also [favoriteNotes].
 @ProviderFor(favoriteNotes)
@@ -23,7 +23,7 @@ final favoriteNotesProvider = AutoDisposeFutureProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FavoriteNotesRef = AutoDisposeFutureProviderRef<List<Note>>;
-String _$archivedNotesHash() => r'95351e0f79d5acf060bcdf6c5cc529e8b2ba60f9';
+String _$archivedNotesHash() => r'54e1588907978bc9b763e9b2b8314c1d2729cdc1';
 
 /// See also [archivedNotes].
 @ProviderFor(archivedNotes)
@@ -40,7 +40,7 @@ final archivedNotesProvider = AutoDisposeFutureProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ArchivedNotesRef = AutoDisposeFutureProviderRef<List<Note>>;
-String _$trashedNotesHash() => r'7a297fc491f2f99b8a0204d90c9fe00a91852f87';
+String _$trashedNotesHash() => r'dcab7383d13118924353c5858c4ad0c7acd608a3';
 
 /// See also [trashedNotes].
 @ProviderFor(trashedNotes)

@@ -39,6 +39,13 @@ class LoginPage extends ConsumerWidget {
               icon: const Icon(Icons.login),
               label: const Text('Sign in with Google'),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  ref.read(authProvider.notifier).signInAnonymously(),
+              icon: const Icon(Icons.login),
+              label: const Text('Annymous Sign in'),
+            ),
           ],
         ),
       ),

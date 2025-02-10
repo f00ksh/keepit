@@ -1,70 +1,82 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../domain/models/settings.dart';
 
 part 'settings_provider.g.dart';
 
-enum GridViewStyle { masonry, uniform }
-
-@riverpod
+@Riverpod(keepAlive: true)
 class Settings extends _$Settings {
+  static const String _boxName = 'settings';
+  late Box<Setting> _box;
+
   @override
-  AsyncValue<Map<String, dynamic>> build() {
-    return const AsyncValue.data({
-      'gridViewStyle': GridViewStyle.masonry,
-      'sortBy': 'dateModified',
-      'sortAscending': false,
-      'showPinnedSection': true,
-    });
+  Future<Setting> build() async {
+    _box = await Hive.openBox<Setting>(_boxName);
+    
+    // Ensure default settings are created if they don't exist
+    if (!_box.containsKey('user_settings')) {
+      final defaultSettings = Setting(syncEnabled: false);
+      await _box.put('user_settings', defaultSettings);
+      return defaultSettings;
+    }
+    
+    return _box.get('user_settings')!;
   }
 
-  Future<void> setGridViewStyle(GridViewStyle style) async {
-    state = const AsyncValue.loading();
-    try {
-      final currentSettings = state.valueOrNull ?? {};
-      state = AsyncValue.data({
-        ...currentSettings,
-        'gridViewStyle': style,
-      });
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+  Future<void> setViewStyle(String style) async {
+    final currentSettings = state.valueOrNull;
+    if (currentSettings == null) return;
+    final newSettings = currentSettings.copyWith(viewStyle: style);
+    await _saveSettings(newSettings);
   }
 
   Future<void> setSortBy(String sortBy) async {
-    state = const AsyncValue.loading();
-    try {
-      final currentSettings = state.valueOrNull ?? {};
-      state = AsyncValue.data({
-        ...currentSettings,
-        'sortBy': sortBy,
-      });
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    final currentSettings = state.valueOrNull;
+    if (currentSettings == null) return;
+    final newSettings = currentSettings.copyWith(sortBy: sortBy);
+    await _saveSettings(newSettings);
   }
 
   Future<void> toggleSortDirection() async {
-    state = const AsyncValue.loading();
-    try {
-      final currentSettings = state.valueOrNull ?? {};
-      state = AsyncValue.data({
-        ...currentSettings,
-        'sortAscending': !(currentSettings['sortAscending'] ?? false),
-      });
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    final currentSettings = state.valueOrNull;
+    if (currentSettings == null) return;
+    final newSettings = currentSettings.copyWith(
+      sortAscending: !currentSettings.sortAscending,
+    );
+    await _saveSettings(newSettings);
   }
 
   Future<void> togglePinnedSection() async {
-    state = const AsyncValue.loading();
+    final currentSettings = state.valueOrNull;
+    if (currentSettings == null) return;
+    final newSettings = currentSettings.copyWith(
+      showPinnedSection: !currentSettings.showPinnedSection,
+    );
+    await _saveSettings(newSettings);
+  }
+
+  Future<void> toggleSync() async {
+    final currentSettings = state.valueOrNull;
+    if (currentSettings == null) return;
+    final newSettings = currentSettings.copyWith(
+      syncEnabled: !currentSettings.syncEnabled,
+    );
+    
     try {
-      final currentSettings = state.valueOrNull ?? {};
-      state = AsyncValue.data({
-        ...currentSettings,
-        'showPinnedSection': !(currentSettings['showPinnedSection'] ?? true),
-      });
+      await _saveSettings(newSettings);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      state = AsyncError(e, stack);
     }
   }
+
+  Future<void> _saveSettings(Setting settings) async {
+    try {
+      await _box.put('user_settings', settings);
+      state = AsyncData(settings);
+    } catch (e, stack) {
+      state = AsyncError(e, stack);
+    }
+  }
+
+  bool get isSyncEnabled => state.valueOrNull?.syncEnabled ?? false;
 }

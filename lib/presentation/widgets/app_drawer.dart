@@ -26,7 +26,7 @@ class AppDrawer extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 28, 16, 16),
           child: userState.when(
             data: (user) => user != null
-                ? _buildUserHeader(context, user.email)
+                ? _buildUserHeader(context, user.email ?? 'No email')
                 : const SizedBox.shrink(),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(

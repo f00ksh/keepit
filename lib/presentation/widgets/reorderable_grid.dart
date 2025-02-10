@@ -31,7 +31,7 @@ class ReorderableGrid extends ConsumerWidget {
                   onTap: () => Navigator.pushNamed(
                     context,
                     AppRoutes.note,
-                    arguments: note,
+                    arguments: note.id,
                   ),
                 ),
                 key: ValueKey(note.id),

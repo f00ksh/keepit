@@ -2,23 +2,57 @@
 
 import 'package:keepit/domain/models/user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../domain/repositories/auth_service_repository.dart';
 import '../../core/constants/app_constants.dart';
 
 class AuthRepositoryImpl implements AuthServiceRepository {
   final SupabaseClient _client;
+  bool _isOfflineMode = true;  // Start in offline mode by default
 
   AuthRepositoryImpl(this._client);
 
   @override
   Future<AppUser?> getCurrentUser() async {
+    if (_isOfflineMode) {
+      // Return null to indicate no authenticated user in offline mode
+      return null;
+    }
     try {
       final user = _client.auth.currentUser;
-      if (user == null) return null;
-      return AppUser.fromJson(user.toJson());
+      return user == null ? null : AppUser.fromJson(user.toJson());
     } catch (e) {
-      print('Error getting current user: $e');
+      print('Get current user error: $e');
       return null;
+    }
+  }
+
+  // signIn Annyomous
+  @override
+  Future<AppUser> signInAnonymously() async {
+    try {
+      if (_isOfflineMode) {
+        // Create a local anonymous user
+        return AppUser(
+          id: const Uuid().v4(),
+          email: null,
+          isAnonymous: true,
+        );
+      }
+
+      final response = await _client.auth.signInAnonymously();
+      final user = response.user;
+      
+      if (user == null) {
+        throw Exception('Failed to create anonymous user');
+      }
+
+      await _createOrUpdateUserProfile(user);
+      return AppUser.fromJson(user.toJson());
+
+    } catch (e) {
+      print('Anonymous sign in error: $e');
+      throw Exception('Failed to sign in anonymously: $e');
     }
   }
 
@@ -107,6 +141,10 @@ class AuthRepositoryImpl implements AuthServiceRepository {
 
   @override
   Stream<AppUser?> get authStateChanges {
+    if (_isOfflineMode) {
+      // Return a stream that emits null once for offline mode
+      return Stream.value(null);
+    }
     return _client.auth.onAuthStateChange.map((event) {
       final user = event.session?.user;
       print('Auth state changed: ${event.event}, User: ${user?.email}');
@@ -155,5 +193,14 @@ class AuthRepositoryImpl implements AuthServiceRepository {
       return Exception('Authentication failed: ${error.message}');
     }
     return Exception('Authentication failed: ${error.toString()}');
+  }
+
+  // Method to toggle offline mode
+  Future<void> setOfflineMode(bool enabled) async {
+    _isOfflineMode = enabled;
+    if (enabled) {
+      // Sign out from Supabase if we're switching to offline mode
+      await signOut();
+    }
   }
 }

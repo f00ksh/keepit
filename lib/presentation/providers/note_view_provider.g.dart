@@ -6,7 +6,7 @@ part of 'note_view_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$noteViewHash() => r'3d150585ad8f3f6e407ce6a61bcc8691e07d3d79';
+String _$noteViewHash() => r'6f79c6e8ca820a3346e75ddda0b3c944002008fb';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,25 +29,32 @@ class _SystemHash {
   }
 }
 
-abstract class _$NoteView
-    extends BuildlessAutoDisposeNotifier<AsyncValue<Note>> {
+abstract class _$NoteView extends BuildlessAutoDisposeAsyncNotifier<Note> {
   late final String noteId;
 
-  AsyncValue<Note> build(
+  FutureOr<Note> build(
     String noteId,
   );
 }
 
-/// See also [NoteView].
+/// Provider for managing the state and operations of a single note view
+///
+/// Copied from [NoteView].
 @ProviderFor(NoteView)
 const noteViewProvider = NoteViewFamily();
 
-/// See also [NoteView].
+/// Provider for managing the state and operations of a single note view
+///
+/// Copied from [NoteView].
 class NoteViewFamily extends Family<AsyncValue<Note>> {
-  /// See also [NoteView].
+  /// Provider for managing the state and operations of a single note view
+  ///
+  /// Copied from [NoteView].
   const NoteViewFamily();
 
-  /// See also [NoteView].
+  /// Provider for managing the state and operations of a single note view
+  ///
+  /// Copied from [NoteView].
   NoteViewProvider call(
     String noteId,
   ) {
@@ -80,10 +87,14 @@ class NoteViewFamily extends Family<AsyncValue<Note>> {
   String? get name => r'noteViewProvider';
 }
 
-/// See also [NoteView].
+/// Provider for managing the state and operations of a single note view
+///
+/// Copied from [NoteView].
 class NoteViewProvider
-    extends AutoDisposeNotifierProviderImpl<NoteView, AsyncValue<Note>> {
-  /// See also [NoteView].
+    extends AutoDisposeAsyncNotifierProviderImpl<NoteView, Note> {
+  /// Provider for managing the state and operations of a single note view
+  ///
+  /// Copied from [NoteView].
   NoteViewProvider(
     String noteId,
   ) : this._internal(
@@ -112,7 +123,7 @@ class NoteViewProvider
   final String noteId;
 
   @override
-  AsyncValue<Note> runNotifierBuild(
+  FutureOr<Note> runNotifierBuild(
     covariant NoteView notifier,
   ) {
     return notifier.build(
@@ -137,8 +148,7 @@ class NoteViewProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<NoteView, AsyncValue<Note>>
-      createElement() {
+  AutoDisposeAsyncNotifierProviderElement<NoteView, Note> createElement() {
     return _NoteViewProviderElement(this);
   }
 
@@ -158,13 +168,13 @@ class NoteViewProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin NoteViewRef on AutoDisposeNotifierProviderRef<AsyncValue<Note>> {
+mixin NoteViewRef on AutoDisposeAsyncNotifierProviderRef<Note> {
   /// The parameter `noteId` of this provider.
   String get noteId;
 }
 
 class _NoteViewProviderElement
-    extends AutoDisposeNotifierProviderElement<NoteView, AsyncValue<Note>>
+    extends AutoDisposeAsyncNotifierProviderElement<NoteView, Note>
     with NoteViewRef {
   _NoteViewProviderElement(super.provider);
 

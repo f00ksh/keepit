@@ -4,18 +4,18 @@ import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/note_view_provider.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
 
-class NoteColorPickerBar extends StatelessWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onColorSelected;
+class NoteColorPickerBar extends ConsumerWidget {
+  final Note note;
+  final String noteId;
 
   const NoteColorPickerBar({
     super.key,
-    required this.selectedIndex,
-    required this.onColorSelected,
+    required this.note,
+    required this.noteId,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -23,8 +23,9 @@ class NoteColorPickerBar extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: ThemeColorPicker(
-        selectedIndex: selectedIndex,
-        onColorSelected: onColorSelected,
+        selectedIndex: note.colorIndex,
+        onColorSelected: (index) =>
+            ref.read(noteViewProvider(noteId).notifier).updateColor(index),
       ),
     );
   }

@@ -1,79 +1,116 @@
-// add_note_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/theme/app_theme.dart';
-import 'package:keepit/data/providers/supabase_providers.dart';
-import 'package:keepit/presentation/providers/add_note_provider.dart';
+import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
+import 'package:uuid/uuid.dart';
 
-class AddNotePage extends ConsumerWidget {
+class AddNotePage extends ConsumerStatefulWidget {
   const AddNotePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final note = ref.watch(addNoteProvider);
-    final color = _getNoteColor(context, note.colorIndex);
+  ConsumerState<AddNotePage> createState() => _AddNotePageState();
+}
 
-    return Scaffold(
-      backgroundColor: color,
-      appBar: _buildAppBar(context, ref),
-      body: _buildContent(context, ref),
-      bottomNavigationBar: _buildColorPicker(context, ref),
+class _AddNotePageState extends ConsumerState<AddNotePage> {
+  late Note _note;
+  final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _note = Note(
+      id: const Uuid().v4(),
+      title: '',
+      content: '',
+      colorIndex: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, WidgetRef ref) {
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _getNoteColor(context, _note.colorIndex);
+
+    return Scaffold(
+      backgroundColor: color,
+      appBar: _buildAppBar(context),
+      body: _buildContent(context),
+      bottomNavigationBar: _buildColorPicker(context),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => _saveAndExit(context, ref),
+        onPressed: () => _saveAndExit(context),
       ),
       actions: [
         IconButton(
-          icon: Icon(ref.watch(addNoteProvider).isPinned
-              ? Icons.push_pin
-              : Icons.push_pin_outlined),
-          onPressed: () => ref.read(addNoteProvider.notifier).togglePinned(),
+          icon: Icon(_note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+          onPressed: () => setState(() {
+            _note = _note.copyWith(isPinned: !_note.isPinned);
+          }),
         ),
         IconButton(
-          icon: Icon(ref.watch(addNoteProvider).isFavorite
-              ? Icons.favorite
-              : Icons.favorite_border),
-          onPressed: () => ref.read(addNoteProvider.notifier).toggleFavorite(),
+          icon: Icon(_note.isFavorite ? Icons.favorite : Icons.favorite_border),
+          onPressed: () => setState(() {
+            _note = _note.copyWith(isFavorite: !_note.isFavorite);
+          }),
         ),
       ],
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref) {
+  Widget _buildContent(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           TextField(
+            controller: _titleController,
             autofocus: true,
             decoration: const InputDecoration.collapsed(
               hintText: 'Title',
             ),
             style: Theme.of(context).textTheme.headlineSmall,
             maxLines: 1,
-            onChanged: (value) =>
-                ref.read(addNoteProvider.notifier).updateTitle(value),
+            onChanged: (value) => setState(() {
+              _note = _note.copyWith(
+                title: value,
+                updatedAt: DateTime.now(),
+              );
+            }),
           ),
           const SizedBox(height: 16),
           Expanded(
             child: TextField(
+              controller: _contentController,
               decoration: const InputDecoration.collapsed(
                 hintText: 'Start writing...',
               ),
               style: Theme.of(context).textTheme.bodyLarge,
               maxLines: null,
               expands: true,
-              onChanged: (value) =>
-                  ref.read(addNoteProvider.notifier).updateContent(value),
+              onChanged: (value) => setState(() {
+                _note = _note.copyWith(
+                  content: value,
+                  updatedAt: DateTime.now(),
+                );
+              }),
             ),
           ),
         ],
@@ -81,7 +118,7 @@ class AddNotePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildColorPicker(BuildContext context, WidgetRef ref) {
+  Widget _buildColorPicker(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -89,9 +126,13 @@ class AddNotePage extends ConsumerWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: ThemeColorPicker(
-        selectedIndex: ref.watch(addNoteProvider).colorIndex,
-        onColorSelected: (index) =>
-            ref.read(addNoteProvider.notifier).updateColor(index),
+        selectedIndex: _note.colorIndex,
+        onColorSelected: (index) => setState(() {
+          _note = _note.copyWith(
+            colorIndex: index,
+            updatedAt: DateTime.now(),
+          );
+        }),
       ),
     );
   }
@@ -102,22 +143,11 @@ class AddNotePage extends ConsumerWidget {
     return colors[index];
   }
 
-  void _saveAndExit(BuildContext context, WidgetRef ref) async {
-    final note = ref.read(addNoteProvider);
-
+  void _saveAndExit(BuildContext context) async {
     // Only save if there's actual content
-    if (note.title.isNotEmpty || note.content.isNotEmpty) {
+    if (_note.title.isNotEmpty || _note.content.isNotEmpty) {
       try {
-        // First, save to Supabase
-        final savedNote =
-            await ref.read(supabaseServiceProvider).createNote(note);
-
-        // Then save locally
-        await ref.read(storageServiceProvider).addNote(savedNote);
-
-        // Invalidate the notes provider to refresh the list
-        ref.invalidate(notesProvider);
-
+        await ref.read(notesProvider.notifier).addNote(_note);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Note saved successfully')),

@@ -6,7 +6,7 @@ part of 'notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$noteHash() => r'6fbba3898da39e9ffd07a61ff892e9c116e3ce6f';
+String _$noteHash() => r'1c82ecea8e0494a4fca8e7f8c3e27e2d4c88a0f9';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -34,7 +34,7 @@ class _SystemHash {
 const noteProvider = NoteFamily();
 
 /// See also [note].
-class NoteFamily extends Family<AsyncValue<Note>> {
+class NoteFamily extends Family<AsyncValue<Note?>> {
   /// See also [note].
   const NoteFamily();
 
@@ -72,7 +72,7 @@ class NoteFamily extends Family<AsyncValue<Note>> {
 }
 
 /// See also [note].
-class NoteProvider extends AutoDisposeFutureProvider<Note> {
+class NoteProvider extends AutoDisposeFutureProvider<Note?> {
   /// See also [note].
   NoteProvider(
     String id,
@@ -104,7 +104,7 @@ class NoteProvider extends AutoDisposeFutureProvider<Note> {
 
   @override
   Override overrideWith(
-    FutureOr<Note> Function(NoteRef provider) create,
+    FutureOr<Note?> Function(NoteRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -121,7 +121,7 @@ class NoteProvider extends AutoDisposeFutureProvider<Note> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<Note> createElement() {
+  AutoDisposeFutureProviderElement<Note?> createElement() {
     return _NoteProviderElement(this);
   }
 
@@ -141,12 +141,12 @@ class NoteProvider extends AutoDisposeFutureProvider<Note> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin NoteRef on AutoDisposeFutureProviderRef<Note> {
+mixin NoteRef on AutoDisposeFutureProviderRef<Note?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _NoteProviderElement extends AutoDisposeFutureProviderElement<Note>
+class _NoteProviderElement extends AutoDisposeFutureProviderElement<Note?>
     with NoteRef {
   _NoteProviderElement(super.provider);
 
@@ -154,7 +154,7 @@ class _NoteProviderElement extends AutoDisposeFutureProviderElement<Note>
   String get id => (origin as NoteProvider).id;
 }
 
-String _$notesHash() => r'31858a47001fa749bd443118b90f86d68e46de2e';
+String _$notesHash() => r'779e885aff29598d824ffeeb591ff4fc29759ecf';
 
 /// See also [Notes].
 @ProviderFor(Notes)

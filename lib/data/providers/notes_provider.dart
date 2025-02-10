@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:keepit/data/providers/auth_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/note.dart';
 import 'supabase_providers.dart';
@@ -11,47 +13,94 @@ class Notes extends _$Notes {
 
   @override
   Future<List<Note>> build() async {
-    // Start periodic sync
-    _syncTimer?.cancel();
-    _syncTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      _syncNotes();
-    });
+    // Get local notes first
+    final notes = await ref.watch(storageServiceProvider).getAllNotes();
 
-    return ref.watch(supabaseServiceProvider).getNotes();
+    // Start sync timer only if user is authenticated and sync is enabled
+    _syncTimer?.cancel();
+    final user = ref.watch(authProvider).valueOrNull;
+    if (user != null && !user.isAnonymous) {
+      _syncTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+        _syncNotes();
+      });
+    }
+
+    return notes;
   }
 
   Future<void> _syncNotes() async {
     try {
+      final user = ref.read(authProvider).valueOrNull;
+      if (user == null || user.isAnonymous) return;
+
       await ref.read(syncServiceProvider).syncNotes();
       ref.invalidateSelf();
     } catch (e) {
-      // Handle sync errors
+      if (kDebugMode) {
+        print('Sync error: $e');
+      }
     }
   }
 
   Future<void> addNote(Note note) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      // Save to Supabase first
-      final savedNote =
+      // Always save locally first
+      await ref.read(storageServiceProvider).addNote(note);
+      
+      // Try to sync if user is authenticated
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        try {
           await ref.read(supabaseServiceProvider).createNote(note);
+        } catch (e) {
+          // Continue anyway as we have local copy
+        }
+      }
 
-      // Then save locally
-      await ref.read(storageServiceProvider).addNote(savedNote);
-
-      // Return updated list
-      return ref.read(supabaseServiceProvider).getNotes();
+      // Return local notes
+      return ref.read(storageServiceProvider).getAllNotes();
     });
   }
 
   Future<void> updateNote(String id, Note updatedNote) async {
-    await ref.read(noteRepositoryProvider).updateNote(updatedNote);
-    ref.invalidateSelf();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      // Update locally first
+      await ref.read(storageServiceProvider).updateNote(updatedNote);
+      
+      // Try to sync if user is authenticated
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        try {
+          await ref.read(supabaseServiceProvider).updateNote(updatedNote);
+        } catch (e) {
+          // Continue anyway as we have local copy
+        }
+      }
+
+      return ref.read(storageServiceProvider).getAllNotes();
+    });
   }
 
   Future<void> deleteNote(String id) async {
-    await ref.read(noteRepositoryProvider).deleteNote(id);
-    ref.invalidateSelf();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      // Delete locally first
+      await ref.read(storageServiceProvider).deleteNote(id);
+      
+      // Try to sync if user is authenticated
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        try {
+          await ref.read(supabaseServiceProvider).deleteNotePermanently(id);
+        } catch (e) {
+          // Continue anyway as we have local copy
+        }
+      }
+
+      return ref.read(storageServiceProvider).getAllNotes();
+    });
   }
 
   Future<void> reorderNotes(int oldIndex, int newIndex) async {
@@ -114,15 +163,16 @@ class Notes extends _$Notes {
     return notes.firstWhere((note) => note.id == noteId);
   }
 
-  // Don't forget to cancel the timer when the provider is disposed
+ 
 
-  void onDispose() {
+
+  void dispose() {
     _syncTimer?.cancel();
+    
   }
 }
 
-// Add a convenience provider for single note
 @riverpod
-Future<Note> note( ref, String id) {
-  return ref.watch(notesProvider.notifier).getNote(id);
+Future<Note?> note( ref, String id) async {
+  return ref.read(storageServiceProvider).getNoteById(id);
 }

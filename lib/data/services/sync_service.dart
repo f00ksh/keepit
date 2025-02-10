@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:keepit/domain/models/note.dart';
+
 import 'hive_stoarge_service.dart';
 import 'supabase_stoarge_service.dart';
 
@@ -9,33 +12,60 @@ class SyncService {
 
   Future<void> syncNotes() async {
     try {
-      // Get local and remote notes
+      // Get local notes
       final localNotes = await _localStorage.getAllNotes();
-      final remoteNotes = await _cloudStorage.getNotes();
+      
+      // Try to get remote notes
+      List<Note> remoteNotes = [];
+      try {
+        remoteNotes = await _cloudStorage.getNotes();
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to fetch remote notes: $e');
+        }
+        return; // Exit if we can't get remote notes
+      }
 
-      // Implement sync logic
-      // This is a simple example - you might want to implement more sophisticated
-      // conflict resolution based on timestamps or other criteria
-      for (final remoteNote in remoteNotes) {
-        final localNote = localNotes.firstWhere(
-          (note) => note.id == remoteNote.id,
-          orElse: () => remoteNote,
-        );
+      // Upload local changes
+      for (final localNote in localNotes) {
+        try {
+          final remoteNote = remoteNotes.firstWhere(
+            (note) => note.id == localNote.id,
+            orElse: () => localNote,
+          );
 
-        if (localNote != remoteNote) {
-          await _localStorage.updateNote(remoteNote);
+          if (localNote.updatedAt.isAfter(remoteNote.updatedAt)) {
+            // Local note is newer, upload it
+            await _cloudStorage.updateNote(localNote);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Failed to sync note ${localNote.id}: $e');
+          }
+          continue; // Continue with next note
         }
       }
 
-      // Upload local notes that don't exist in remote
-      for (final localNote in localNotes) {
-        if (!remoteNotes.any((note) => note.id == localNote.id)) {
-          await _cloudStorage.createNote(localNote);
+      // Download remote changes
+      for (final remoteNote in remoteNotes) {
+        try {
+          final localNote = await _localStorage.getNoteById(remoteNote.id);
+          if (localNote == null || remoteNote.updatedAt.isAfter(localNote.updatedAt)) {
+            // Remote note is newer or doesn't exist locally
+            await _localStorage.updateNote(remoteNote);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Failed to sync note ${remoteNote.id}: $e');
+          }
+          continue; // Continue with next note
         }
       }
     } catch (e) {
-      // Handle sync errors
-      rethrow;
+      if (kDebugMode) {
+        print('Sync failed: $e');
+      }
+      // Don't rethrow to prevent app crashes
     }
   }
 }
