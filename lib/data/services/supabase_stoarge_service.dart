@@ -23,7 +23,7 @@ class SupabaseService {
           .select()
           .eq('user_id', userId)
           .eq('is_deleted', false)
-          .order('updated_at', ascending: false);
+          .order('order', ascending: true); // Order by the order field
 
       print('Fetched notes from Supabase: $response');
       return (response as List)
@@ -31,6 +31,7 @@ class SupabaseService {
                 ...note,
                 'color_index':
                     note['color_index'] ?? 0, // Provide default value
+                'order': note['order'] ?? 0,
               }))
           .toList();
     } catch (e) {
@@ -100,6 +101,7 @@ class SupabaseService {
         'updated_at': note.updatedAt.toIso8601String(),
         'is_archived': note.isArchived,
         'is_deleted': note.isDeleted,
+        'order': note.order,
       }).eq('id', note.id);
     } catch (e) {
       print('Error updating note: $e');

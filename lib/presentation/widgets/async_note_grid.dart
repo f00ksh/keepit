@@ -28,7 +28,7 @@ class AsyncNoteGrid extends ConsumerWidget {
               icon: emptyIcon,
             )
           : useReorderable
-              ? ReorderableGrid(notes: notes)
+              ? const ReorderableGrid() // Remove notes parameter
               : NoteGrid(notes: notes),
       loading: () => const SliverToBoxAdapter(
         child: Center(child: CircularProgressIndicator()),

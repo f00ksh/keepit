@@ -35,6 +35,9 @@ class Note {
   @HiveField(9)
   final bool isDeleted;
 
+  @HiveField(10)
+  final int order;
+
   Note({
     required this.id,
     required this.title,
@@ -46,6 +49,7 @@ class Note {
     required this.updatedAt,
     this.isArchived = false,
     this.isDeleted = false,
+    this.order = 0, // Default order
   });
 
   Note copyWith({
@@ -59,6 +63,7 @@ class Note {
     DateTime? updatedAt,
     bool? isArchived,
     bool? isDeleted,
+    int? order,
   }) {
     return Note(
       id: id ?? this.id,
@@ -71,6 +76,7 @@ class Note {
       updatedAt: updatedAt ?? this.updatedAt,
       isArchived: isArchived ?? this.isArchived,
       isDeleted: isDeleted ?? this.isDeleted,
+      order: order ?? this.order,
     );
   }
 
@@ -86,6 +92,7 @@ class Note {
       'updated_at': updatedAt.toIso8601String(),
       'is_archived': isArchived,
       'is_deleted': isDeleted,
+      'order': order,
     };
   }
 
@@ -101,6 +108,7 @@ class Note {
       updatedAt: DateTime.parse(json['updated_at']),
       isArchived: json['is_archived'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
+      order: json['order'] ?? 0,
     );
   }
 }

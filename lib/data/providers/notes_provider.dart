@@ -16,6 +16,16 @@ class Notes extends _$Notes {
     // Get local notes first
     final notes = await ref.watch(storageServiceProvider).getAllNotes();
 
+    // Sort notes by order and other criteria
+    notes.sort((a, b) {
+      // Then by order
+      if (a.order != b.order) {
+        return a.order.compareTo(b.order);
+      }
+      // Finally by updated date
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+
     // Start sync timer only if user is authenticated and sync is enabled
     _syncTimer?.cancel();
     final user = ref.watch(authProvider).valueOrNull;
@@ -104,14 +114,48 @@ class Notes extends _$Notes {
   }
 
   Future<void> reorderNotes(int oldIndex, int newIndex) async {
-    final currentState = await future;
-    final updatedNotes = List<Note>.from(currentState);
-    if (oldIndex < newIndex) newIndex -= 1;
-    final note = updatedNotes.removeAt(oldIndex);
-    updatedNotes.insert(newIndex, note);
+    final currentState = state;
+    if (!currentState.hasValue) return;
 
-    await ref.read(noteRepositoryProvider).reorderNotes(updatedNotes);
-    ref.invalidateSelf();
+    final notes = List<Note>.from(currentState.value!);
+    final movedNote = notes[oldIndex];
+
+    // Remove and insert at new position
+    notes.removeAt(oldIndex);
+    if (oldIndex < newIndex) newIndex--;
+    notes.insert(newIndex, movedNote);
+
+    // Update orders efficiently
+    final updates = <Note>[];
+    for (var i = 0; i < notes.length; i++) {
+      if (notes[i].order != i) {
+        final updatedNote = notes[i].copyWith(
+          order: i,
+          updatedAt: DateTime.now(),
+        );
+        updates.add(updatedNote);
+        notes[i] = updatedNote;
+      }
+    }
+
+    // Optimistically update state
+    state = AsyncData(notes);
+
+    // Batch update storage
+    try {
+      await Future.wait(updates.map((note) async {
+        await ref.read(storageServiceProvider).updateNote(note);
+
+        final user = ref.read(authProvider).valueOrNull;
+        if (user != null && !user.isAnonymous) {
+          await ref.read(supabaseServiceProvider).updateNote(note);
+        }
+      }));
+    } catch (e) {
+      // Revert on error
+      state = currentState;
+      rethrow;
+    }
   }
 
   Future<void> toggleFavorite(String noteId, bool isFavorite) async {
@@ -191,6 +235,60 @@ class Notes extends _$Notes {
   Future<Note?> getNoteById(String noteId) async {
     final notes = await future; // Access the fetched notes
     return notes.firstWhere((note) => note.id == noteId);
+  }
+
+  // Add method to fix order if needed
+  Future<void> fixNoteOrder() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final notes = await future;
+      final sortedNotes = List<Note>.from(notes)
+        ..sort((a, b) => a.order.compareTo(b.order));
+
+      for (var i = 0; i < sortedNotes.length; i++) {
+        final note = sortedNotes[i];
+        if (note.order != i) {
+          final updatedNote = note.copyWith(order: i);
+          await ref.read(storageServiceProvider).updateNote(updatedNote);
+        }
+      }
+
+      return ref.read(storageServiceProvider).getAllNotes();
+    });
+  }
+
+  Future<void> updateBatchNotes(List<Note> updates) async {
+    final currentState = state;
+    if (!currentState.hasValue) return;
+
+    final notes = List<Note>.from(currentState.value!);
+
+    // Update notes in current state
+    for (final update in updates) {
+      final index = notes.indexWhere((note) => note.id == update.id);
+      if (index != -1) {
+        notes[index] = update;
+      }
+    }
+
+    // Optimistically update state
+    state = AsyncData(notes);
+
+    try {
+      // Batch update storage
+      await Future.wait(updates.map((note) async {
+        await ref.read(storageServiceProvider).updateNote(note);
+
+        final user = ref.read(authProvider).valueOrNull;
+        if (user != null && !user.isAnonymous) {
+          await ref.read(supabaseServiceProvider).updateNote(note);
+        }
+      }));
+    } catch (e) {
+      // Revert on error
+      state = currentState;
+      rethrow;
+    }
   }
 
   void dispose() {

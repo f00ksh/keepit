@@ -21,38 +21,36 @@ class NoteCard extends StatelessWidget {
     return NoteHeroWidget(
         tag: 'note_${note.id}',
         child: Material(
-          child: Material(
-            color: Colors.transparent,
-            child: SizedBox(
-              width: double.infinity,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    try {
-                      onTap?.call();
-                    } catch (e) {
-                      ErrorHandler.showError(
-                        context,
-                        ErrorHandler.getErrorMessage(e),
-                      );
-                    }
-                  },
-                  child: noteColor == null
-                      ? Card.outlined(
-                          elevation: 0,
-                          child: cardContent,
-                        )
-                      : Card(
-                          elevation: 0,
-                          color: noteColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: cardContent,
+          color: Colors.transparent,
+          child: SizedBox(
+            width: double.infinity,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  try {
+                    onTap?.call();
+                  } catch (e) {
+                    ErrorHandler.showError(
+                      context,
+                      ErrorHandler.getErrorMessage(e),
+                    );
+                  }
+                },
+                child: noteColor == null
+                    ? Card.outlined(
+                        elevation: 0,
+                        child: cardContent,
+                      )
+                    : Card(
+                        elevation: 0,
+                        color: noteColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                ),
+                        child: cardContent,
+                      ),
               ),
             ),
           ),
@@ -69,7 +67,7 @@ class NoteCard extends StatelessWidget {
           AutoSizeText(
             note.title,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
             maxLines: note.content.isNotEmpty ? 1 : 3,
@@ -80,9 +78,9 @@ class NoteCard extends StatelessWidget {
             child: AutoSizeText(
               note.content,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
               ),
-              maxLines: 10,
+              maxLines: 20,
               overflow: TextOverflow.ellipsis,
             ),
           ),

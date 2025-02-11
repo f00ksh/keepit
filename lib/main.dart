@@ -17,7 +17,7 @@ void main() async {
 
   // Initialize Hive
   await Hive.initFlutter();
-   Hive.registerAdapter(AppUserAdapter());
+  Hive.registerAdapter(AppUserAdapter());
   Hive.registerAdapter(NoteAdapter());
   Hive.registerAdapter(SettingAdapter());
 

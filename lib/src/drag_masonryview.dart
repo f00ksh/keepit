@@ -11,6 +11,7 @@ class DragMasonryGrid extends DragScrollViewBase {
   final double mainAxisSpacing;
   final double crossAxisSpacing;
   final bool enableShakeAnimation;
+  final Duration animationDuration;
 
   const DragMasonryGrid({
     super.key,
@@ -19,6 +20,7 @@ class DragMasonryGrid extends DragScrollViewBase {
     required this.crossAxisCount,
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
+    this.animationDuration = const Duration(milliseconds: 300),
     super.isLongPressDraggable = true,
     super.buildFeedback,
     super.axis,
@@ -26,9 +28,9 @@ class DragMasonryGrid extends DragScrollViewBase {
     super.hitTestBehavior = HitTestBehavior.translucent,
     super.scrollController,
     super.isDragNotification = false,
-    super.draggingWidgetOpacity = 0.5,
+    super.draggingWidgetOpacity = 0.7,
     super.edgeScroll = 0.1,
-    super.edgeScrollSpeedMilliseconds = 500,
+    super.edgeScrollSpeedMilliseconds = 150,
     super.isNotDragList,
     this.enableShakeAnimation = false,
     super.dragChildBoxDecoration,
@@ -80,14 +82,19 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
       enableShakeAnimation: widget.enableShakeAnimation,
       items: (DragListItem element, DraggableWidget draggableWidget) {
         if (element is DragGridExtentItem) {
-          return SizedBox(
-            width: element.mainAxisExtent,
-            key: ValueKey(element.key.toString()),
-            child: draggableWidget(element.widget),
+          return AnimatedContainer(
+            duration: widget.animationDuration,
+            curve: Curves.easeInOut,
+            child: SizedBox(
+              width: element.mainAxisExtent,
+              key: ValueKey(element.key.toString()),
+              child: draggableWidget(element.widget),
+            ),
           );
         } else {
           throw FlutterError(
-              'Item should be of type DragGridExtentItem for masonry layout.');
+            'Item should be of type DragGridExtentItem for masonry layout.',
+          );
         }
       },
       dataList: _children,
@@ -113,7 +120,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
           buildItems: (List<Widget> children) {
             return MasonryGridView.count(
               padding:
-                  const EdgeInsets.only(right: 8, left: 8, bottom: 25, top: 12),
+                  const EdgeInsets.only(right: 4, left: 4, bottom: 25, top: 12),
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               crossAxisCount: widget.crossAxisCount,
@@ -121,7 +128,11 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
               crossAxisSpacing: widget.crossAxisSpacing,
               itemCount: children.length,
               itemBuilder: (context, index) {
-                return children[index];
+                return AnimatedContainer(
+                  duration: widget.animationDuration,
+                  curve: Curves.easeInOut,
+                  child: children[index],
+                );
               },
             );
           },

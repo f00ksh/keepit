@@ -27,13 +27,14 @@ class NoteAdapter extends TypeAdapter<Note> {
       updatedAt: fields[7] as DateTime,
       isArchived: fields[8] as bool,
       isDeleted: fields[9] as bool,
+      order: fields[10] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Note obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(8)
       ..write(obj.isArchived)
       ..writeByte(9)
-      ..write(obj.isDeleted);
+      ..write(obj.isDeleted)
+      ..writeByte(10)
+      ..write(obj.order);
   }
 
   @override

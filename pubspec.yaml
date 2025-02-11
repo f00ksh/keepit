@@ -45,6 +45,7 @@ dependencies:
   flutter_staggered_grid_view: ^0.7.0
   supabase_flutter: ^2.8.3
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -54,7 +55,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
   build_runner: ^2.4.13
   riverpod_generator: ^2.6.3
   hive_generator: ^2.0.1

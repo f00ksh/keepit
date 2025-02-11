@@ -84,17 +84,17 @@ class _NotePageState extends ConsumerState<NotePage> {
     final note = ref.watch(noteViewProvider(widget.noteId));
     _initializeControllers(note);
 
-    return NoteHeroWidget(
-      tag: 'note_${widget.noteId}',
-      child: Material(
-        child: PopScope(
-          onPopInvokedWithResult: (didPop, result) async {
-            if (didPop) {
-              await ref
-                  .read(noteViewProvider(widget.noteId).notifier)
-                  .saveChanges();
-            }
-          },
+    return Material(
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) {
+            await ref
+                .read(noteViewProvider(widget.noteId).notifier)
+                .saveChanges();
+          }
+        },
+        child: NoteHeroWidget(
+          tag: 'note_${widget.noteId}',
           child: Scaffold(
             appBar: AppBar(
               scrolledUnderElevation: 0,
@@ -158,7 +158,7 @@ class _NotePageState extends ConsumerState<NotePage> {
                             hintText: 'Title',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                                horizontal: 16, vertical: 6),
                           ),
                           style: Theme.of(context).textTheme.titleLarge,
                           onChanged: (value) {
