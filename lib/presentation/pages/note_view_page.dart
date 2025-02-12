@@ -84,143 +84,140 @@ class _NotePageState extends ConsumerState<NotePage> {
     final note = ref.watch(noteViewProvider(widget.noteId));
     _initializeControllers(note);
 
-    return Material(
-      child: PopScope(
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop) {
-            await ref
-                .read(noteViewProvider(widget.noteId).notifier)
-                .saveChanges();
-          }
-        },
-        child: NoteHeroWidget(
-          tag: 'note_${widget.noteId}',
-          child: Scaffold(
-            appBar: AppBar(
-              scrolledUnderElevation: 0,
-              backgroundColor: getNoteColor(context, note.colorIndex),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-              ),
-              actions: [
-                // Pin/Unpin
-                IconButton(
-                  icon: Icon(
-                    note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                  ),
-                  onPressed: () => ref
-                      .read(noteViewProvider(widget.noteId).notifier)
-                      .togglePin(),
-                ),
-                // Favorite/Unfavorite
-                IconButton(
-                  icon: Icon(
-                    note.isFavorite ? Icons.favorite : Icons.favorite_border,
-                  ),
-                  onPressed: () => ref
-                      .read(noteViewProvider(widget.noteId).notifier)
-                      .toggleFavorite(),
-                ),
-                // Archive/Unarchive
-                IconButton(
-                  icon: Icon(
-                    note.isArchived
-                        ? Icons.unarchive_outlined
-                        : Icons.archive_outlined,
-                  ),
-                  onPressed: () => ref
-                      .read(noteViewProvider(widget.noteId).notifier)
-                      .toggleArchive(),
-                ),
-
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () {
-                    ref
-                        .read(noteViewProvider(widget.noteId).notifier)
-                        .moveToTrash();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) {
+          await ref
+              .read(noteViewProvider(widget.noteId).notifier)
+              .saveChanges();
+        }
+      },
+      child: NoteHeroWidget(
+        tag: 'note_${widget.noteId}',
+        child: Scaffold(
+          appBar: AppBar(
+            scrolledUnderElevation: 0,
+            backgroundColor: getNoteColor(context, note.colorIndex),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
             ),
-            body: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    color: getNoteColor(context, note.colorIndex),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _titleController,
+            actions: [
+              // Pin/Unpin
+              IconButton(
+                icon: Icon(
+                  note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                ),
+                onPressed: () => ref
+                    .read(noteViewProvider(widget.noteId).notifier)
+                    .togglePin(),
+              ),
+              // Favorite/Unfavorite
+              IconButton(
+                icon: Icon(
+                  note.isFavorite ? Icons.favorite : Icons.favorite_border,
+                ),
+                onPressed: () => ref
+                    .read(noteViewProvider(widget.noteId).notifier)
+                    .toggleFavorite(),
+              ),
+              // Archive/Unarchive
+              IconButton(
+                icon: Icon(
+                  note.isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                ),
+                onPressed: () => ref
+                    .read(noteViewProvider(widget.noteId).notifier)
+                    .toggleArchive(),
+              ),
+
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () {
+                  ref
+                      .read(noteViewProvider(widget.noteId).notifier)
+                      .moveToTrash();
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  color: getNoteColor(context, note.colorIndex),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          hintText: 'Title',
+                          border: InputBorder.none,
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        ),
+                        style: Theme.of(context).textTheme.titleLarge,
+                        onChanged: (value) {
+                          _debounceUpdate(() {
+                            ref
+                                .read(noteViewProvider(widget.noteId).notifier)
+                                .updateTitle(value);
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _contentController,
                           decoration: const InputDecoration(
-                            hintText: 'Title',
+                            hintText: 'Note',
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 6),
+                            contentPadding: EdgeInsets.all(16),
                           ),
-                          style: Theme.of(context).textTheme.titleLarge,
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                          textCapitalization: TextCapitalization.sentences,
                           onChanged: (value) {
                             _debounceUpdate(() {
                               ref
                                   .read(
                                       noteViewProvider(widget.noteId).notifier)
-                                  .updateTitle(value);
+                                  .updateContent(value);
                             });
                           },
                         ),
-                        Expanded(
-                          child: TextField(
-                            controller: _contentController,
-                            decoration: const InputDecoration(
-                              hintText: 'Note',
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.all(16),
-                            ),
-                            maxLines: null,
-                            keyboardType: TextInputType.multiline,
-                            textCapitalization: TextCapitalization.sentences,
-                            onChanged: (value) {
-                              _debounceUpdate(() {
-                                ref
-                                    .read(noteViewProvider(widget.noteId)
-                                        .notifier)
-                                    .updateContent(value);
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: getNoteColor(context, note.colorIndex),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.upload_file),
-                        onPressed: () => _showColorPicker(context, note),
-                      ),
-                      Text(
-                        _formatEditedDate(note.updatedAt),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.color_lens_outlined),
-                        onPressed: () => _showColorPicker(context, note),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: getNoteColor(context, note.colorIndex),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.upload_file),
+                      onPressed: () => _showColorPicker(context, note),
+                    ),
+                    Text(
+                      _formatEditedDate(note.updatedAt),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.color_lens_outlined),
+                      onPressed: () => _showColorPicker(context, note),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

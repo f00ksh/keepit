@@ -36,7 +36,7 @@ class Note {
   final bool isDeleted;
 
   @HiveField(10)
-  final int order;
+  final int index; // Changed from order to index to match grid semantics
 
   Note({
     required this.id,
@@ -49,7 +49,7 @@ class Note {
     required this.updatedAt,
     this.isArchived = false,
     this.isDeleted = false,
-    this.order = 0, // Default order
+    this.index = 0,
   });
 
   Note copyWith({
@@ -63,7 +63,7 @@ class Note {
     DateTime? updatedAt,
     bool? isArchived,
     bool? isDeleted,
-    int? order,
+    int? index,
   }) {
     return Note(
       id: id ?? this.id,
@@ -76,7 +76,7 @@ class Note {
       updatedAt: updatedAt ?? this.updatedAt,
       isArchived: isArchived ?? this.isArchived,
       isDeleted: isDeleted ?? this.isDeleted,
-      order: order ?? this.order,
+      index: index ?? this.index,
     );
   }
 
@@ -92,7 +92,7 @@ class Note {
       'updated_at': updatedAt.toIso8601String(),
       'is_archived': isArchived,
       'is_deleted': isDeleted,
-      'order': order,
+      'index': index,
     };
   }
 
@@ -108,7 +108,7 @@ class Note {
       updatedAt: DateTime.parse(json['updated_at']),
       isArchived: json['is_archived'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
-      order: json['order'] ?? 0,
+      index: json['index'] ?? 0,
     );
   }
 }

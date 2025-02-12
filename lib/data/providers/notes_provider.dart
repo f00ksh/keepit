@@ -9,22 +9,14 @@ part 'notes_provider.g.dart';
 
 @riverpod
 class Notes extends _$Notes {
+  static const String _tag = 'NotesProvider';
   Timer? _syncTimer;
 
   @override
   Future<List<Note>> build() async {
+    debugPrint('$_tag: Building provider');
     // Get local notes first
     final notes = await ref.watch(storageServiceProvider).getAllNotes();
-
-    // Sort notes by order and other criteria
-    notes.sort((a, b) {
-      // Then by order
-      if (a.order != b.order) {
-        return a.order.compareTo(b.order);
-      }
-      // Finally by updated date
-      return b.updatedAt.compareTo(a.updatedAt);
-    });
 
     // Start sync timer only if user is authenticated and sync is enabled
     _syncTimer?.cancel();
@@ -36,6 +28,32 @@ class Notes extends _$Notes {
     }
 
     return notes;
+  }
+
+  Future<void> reorderNotesAndSync(List<Note> reorderedNotes) async {
+    if (!state.hasValue) {
+      debugPrint('$_tag: Cannot reorder - no current state');
+      return;
+    }
+
+    try {
+      debugPrint('$_tag: Syncing reordered notes');
+      state = AsyncData(reorderedNotes);
+
+      // Update local storage
+      await ref.read(storageServiceProvider).updateBatchNotes(reorderedNotes);
+
+      final user = ref.read(authProvider).valueOrNull;
+      if (user != null && !user.isAnonymous) {
+        debugPrint('$_tag: Syncing updates to Supabase');
+        await Future.wait(reorderedNotes
+            .map((note) => ref.read(supabaseServiceProvider).updateNote(note)));
+        debugPrint('$_tag: Supabase sync completed');
+      }
+    } catch (e) {
+      debugPrint('$_tag: Error during reordering sync: $e');
+      ref.invalidateSelf();
+    }
   }
 
   Future<void> _syncNotes() async {
@@ -111,51 +129,6 @@ class Notes extends _$Notes {
 
       return ref.read(storageServiceProvider).getAllNotes();
     });
-  }
-
-  Future<void> reorderNotes(int oldIndex, int newIndex) async {
-    final currentState = state;
-    if (!currentState.hasValue) return;
-
-    final notes = List<Note>.from(currentState.value!);
-    final movedNote = notes[oldIndex];
-
-    // Remove and insert at new position
-    notes.removeAt(oldIndex);
-    if (oldIndex < newIndex) newIndex--;
-    notes.insert(newIndex, movedNote);
-
-    // Update orders efficiently
-    final updates = <Note>[];
-    for (var i = 0; i < notes.length; i++) {
-      if (notes[i].order != i) {
-        final updatedNote = notes[i].copyWith(
-          order: i,
-          updatedAt: DateTime.now(),
-        );
-        updates.add(updatedNote);
-        notes[i] = updatedNote;
-      }
-    }
-
-    // Optimistically update state
-    state = AsyncData(notes);
-
-    // Batch update storage
-    try {
-      await Future.wait(updates.map((note) async {
-        await ref.read(storageServiceProvider).updateNote(note);
-
-        final user = ref.read(authProvider).valueOrNull;
-        if (user != null && !user.isAnonymous) {
-          await ref.read(supabaseServiceProvider).updateNote(note);
-        }
-      }));
-    } catch (e) {
-      // Revert on error
-      state = currentState;
-      rethrow;
-    }
   }
 
   Future<void> toggleFavorite(String noteId, bool isFavorite) async {
@@ -237,55 +210,44 @@ class Notes extends _$Notes {
     return notes.firstWhere((note) => note.id == noteId);
   }
 
-  // Add method to fix order if needed
-  Future<void> fixNoteOrder() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final notes = await future;
-      final sortedNotes = List<Note>.from(notes)
-        ..sort((a, b) => a.order.compareTo(b.order));
-
-      for (var i = 0; i < sortedNotes.length; i++) {
-        final note = sortedNotes[i];
-        if (note.order != i) {
-          final updatedNote = note.copyWith(order: i);
-          await ref.read(storageServiceProvider).updateNote(updatedNote);
-        }
-      }
-
-      return ref.read(storageServiceProvider).getAllNotes();
-    });
-  }
-
   Future<void> updateBatchNotes(List<Note> updates) async {
     final currentState = state;
-    if (!currentState.hasValue) return;
+    if (!currentState.hasValue) {
+      debugPrint('$_tag: Cannot update batch - no current state');
+      return;
+    }
 
+    debugPrint('$_tag: Processing ${updates.length} batch updates');
     final notes = List<Note>.from(currentState.value!);
 
-    // Update notes in current state
     for (final update in updates) {
       final index = notes.indexWhere((note) => note.id == update.id);
       if (index != -1) {
+        debugPrint('$_tag: Updating note ${update.id} at index $index');
         notes[index] = update;
+      } else {
+        debugPrint('$_tag: Note ${update.id} not found in current state');
       }
     }
 
-    // Optimistically update state
+    debugPrint('$_tag: Updating state with ${notes.length} notes');
     state = AsyncData(notes);
 
     try {
-      // Batch update storage
+      debugPrint('$_tag: Starting batch storage update');
       await Future.wait(updates.map((note) async {
         await ref.read(storageServiceProvider).updateNote(note);
+        debugPrint('$_tag: Updated note ${note.id} in local storage');
 
         final user = ref.read(authProvider).valueOrNull;
         if (user != null && !user.isAnonymous) {
+          debugPrint('$_tag: Syncing note ${note.id} to Supabase');
           await ref.read(supabaseServiceProvider).updateNote(note);
         }
       }));
+      debugPrint('$_tag: Batch update completed successfully');
     } catch (e) {
-      // Revert on error
+      debugPrint('$_tag: Batch update failed: $e');
       state = currentState;
       rethrow;
     }

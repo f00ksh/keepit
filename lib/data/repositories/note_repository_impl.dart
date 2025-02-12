@@ -31,9 +31,4 @@ class NoteRepositoryImpl implements NoteRepository {
   Future<Note?> getNoteById(String id) async {
     return await _storageService.getNoteById(id);
   }
-
-  @override
-  Future<void> reorderNotes(List<Note> notes) async {
-    await _storageService.reorderNotes(notes);
-  }
 }

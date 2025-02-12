@@ -7,14 +7,17 @@ class StorageService {
 
   Future<void> init() async {
     await Hive.initFlutter();
+
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(NoteAdapter());
     }
+
     _notesBox = await Hive.openBox<Note>(notesBoxName);
   }
 
   Future<List<Note>> getAllNotes() async {
-    return _notesBox.values.toList();
+    final notes = _notesBox.values.toList();
+    return notes;
   }
 
   Future<void> addNote(Note note) async {
@@ -26,16 +29,13 @@ class StorageService {
   }
 
   Future<void> deleteNote(String id) async {
-    // Now only used for permanent deletion
     await _notesBox.delete(id);
   }
 
   Future<Note?> getNoteById(String id) async {
-    return _notesBox.get(id);
-  }
+    final note = _notesBox.get(id);
 
-  Future<void> reorderNotes(List<Note> notes) async {
-    // Implementation for reordering if needed
+    return note;
   }
 
   Future<void> clearAll() async {
@@ -53,6 +53,10 @@ class StorageService {
         updatedAt: DateTime.now(),
       );
       await updateNote(trashedNote);
-    }
+    } else {}
+  }
+
+  Future<void> updateBatchNotes(List<Note> notes) async {
+    await _notesBox.putAll({for (var note in notes) note.id: note});
   }
 }

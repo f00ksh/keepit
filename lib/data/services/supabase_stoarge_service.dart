@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'package:keepit/core/constants/app_constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/note.dart';
 
@@ -14,25 +15,26 @@ class SupabaseService {
   Future<List<Note>> getNotes() async {
     try {
       final userId = _client.auth.currentUser?.id;
-      if (userId == null) {
-        return [];
-      }
+      if (userId == null) return [];
 
       final response = await _client
           .from('notes')
           .select()
           .eq('user_id', userId)
           .eq('is_deleted', false)
-          .order('order', ascending: true); // Order by the order field
+          .order('index', ascending: true);
 
-      print('Fetched notes from Supabase: $response');
       return (response as List)
-          .map((note) => Note.fromJson({
+          .map(
+            (note) => Note.fromJson(
+              {
                 ...note,
                 'color_index':
-                    note['color_index'] ?? 0, // Provide default value
-                'order': note['order'] ?? 0,
-              }))
+                    note['color_index'] ?? AppConstants.defaultNoteColorIndex,
+                'index': note['index'] ?? 0,
+              },
+            ),
+          )
           .toList();
     } catch (e) {
       print('Error fetching notes: $e');
@@ -62,7 +64,6 @@ class SupabaseService {
 
   Future<Note> createNote(Note note) async {
     try {
-      print('Creating note with color index: ${note.colorIndex}');
       final response = await _client
           .from('notes')
           .insert({
@@ -76,12 +77,12 @@ class SupabaseService {
             'updated_at': note.updatedAt.toIso8601String(),
             'is_archived': note.isArchived,
             'is_deleted': note.isDeleted,
+            'index': note.index,
             'user_id': _client.auth.currentUser?.id,
           })
           .select()
           .single();
 
-      print('Note created in Supabase: $response');
       return Note.fromJson(response);
     } catch (e) {
       print('Error creating note: $e');
@@ -91,18 +92,19 @@ class SupabaseService {
 
   Future<void> updateNote(Note note) async {
     try {
-      print('Updating note with color index: ${note.colorIndex}');
-      await _client.from('notes').update({
-        'title': note.title,
-        'content': note.content,
-        'is_pinned': note.isPinned,
-        'is_favorite': note.isFavorite,
-        'color_index': note.colorIndex,
-        'updated_at': note.updatedAt.toIso8601String(),
-        'is_archived': note.isArchived,
-        'is_deleted': note.isDeleted,
-        'order': note.order,
-      }).eq('id', note.id);
+      await _client.from('notes').update(
+        {
+          'title': note.title,
+          'content': note.content,
+          'is_pinned': note.isPinned,
+          'is_favorite': note.isFavorite,
+          'color_index': note.colorIndex,
+          'updated_at': note.updatedAt.toIso8601String(),
+          'is_archived': note.isArchived,
+          'is_deleted': note.isDeleted,
+          'index': note.index,
+        },
+      ).eq('id', note.id);
     } catch (e) {
       print('Error updating note: $e');
       rethrow;

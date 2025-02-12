@@ -27,7 +27,7 @@ class NoteAdapter extends TypeAdapter<Note> {
       updatedAt: fields[7] as DateTime,
       isArchived: fields[8] as bool,
       isDeleted: fields[9] as bool,
-      order: fields[10] as int,
+      index: fields[10] as int,
     );
   }
 
@@ -56,7 +56,7 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(9)
       ..write(obj.isDeleted)
       ..writeByte(10)
-      ..write(obj.order);
+      ..write(obj.index);
   }
 
   @override

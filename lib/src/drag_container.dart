@@ -178,28 +178,39 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 200), () {
         if (!DragNotification.isScroll) {
+          bool shouldReorder = true;
           if (widget.dragCallbacks.onWillAccept != null) {
-            widget.dragCallbacks.onWillAccept
-                ?.call(moveData, data, isFront, acceptDetails: acceptDetails);
-          } else if (moveData != null) {
-            final int oldIndex = widget.dataList.indexOf(moveData);
+            shouldReorder = widget.dragCallbacks.onWillAccept?.call(
+                    moveData, data, isFront,
+                    acceptDetails: acceptDetails) ??
+                false;
+          }
+
+          if (shouldReorder) {
+            final int oldIndex = originalindex!;
             int newIndex = widget.dataList.indexOf(data);
-            setState(() {
-              if (isFront) {
-                widget.dataList.removeAt(oldIndex);
-                widget.dataList.insert(newIndex, moveData);
-              } else {
-                widget.dataList.removeAt(oldIndex);
-                if (newIndex + 1 < widget.dataList.length) {
-                  newIndex += 1;
+            acceptDetails =
+                AcceptDetails(oldIndex: oldIndex, newIndex: newIndex);
+
+            if (moveData != null) {
+              final int oldIndex = widget.dataList.indexOf(moveData);
+              setState(() {
+                if (isFront) {
+                  widget.dataList.removeAt(oldIndex);
                   widget.dataList.insert(newIndex, moveData);
                 } else {
-                  widget.dataList.insert(newIndex, moveData);
+                  widget.dataList.removeAt(oldIndex);
+                  if (newIndex + 1 < widget.dataList.length) {
+                    newIndex += 1;
+                    widget.dataList.insert(newIndex, moveData);
+                  } else {
+                    widget.dataList.insert(newIndex, moveData);
+                  }
                 }
-              }
-            });
-            acceptDetails =
-                AcceptDetails(oldIndex: originalindex!, newIndex: newIndex);
+              });
+            }
+          } else {
+            acceptDetails = null;
           }
         }
       });
@@ -267,12 +278,13 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
                           setWillAccept(details.data, data);
                           return true;
                         },
-                        onAcceptWithDetails: widget.dragCallbacks.onAccept == null
-                            ? null
-                            : (DragTargetDetails<T> details) => widget
-                                .dragCallbacks.onAccept
-                                ?.call(details.data, data, true,
-                                    acceptDetails: acceptDetails),
+                        onAcceptWithDetails: (DragTargetDetails<T> details) {
+                          if (widget.dragCallbacks.onAccept != null) {
+                            widget.dragCallbacks.onAccept?.call(
+                                details.data, data, true,
+                                acceptDetails: acceptDetails);
+                          }
+                        },
                         onLeave: widget.dragCallbacks.onLeave == null
                             ? null
                             : (T? moveData) => widget.dragCallbacks.onLeave

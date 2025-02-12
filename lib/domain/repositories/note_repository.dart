@@ -6,5 +6,4 @@ abstract class NoteRepository {
   Future<void> updateNote(Note note);
   Future<void> deleteNote(String id);
   Future<Note?> getNoteById(String id);
-  Future<void> reorderNotes(List<Note> notes);
 }
