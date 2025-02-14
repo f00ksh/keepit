@@ -36,7 +36,7 @@ class Note {
   final bool isDeleted;
 
   @HiveField(10)
-  final int index; // Changed from order to index to match grid semantics
+  final int index;
 
   Note({
     required this.id,

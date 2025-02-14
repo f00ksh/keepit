@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/routes/app_router.dart';
 
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
+import 'package:keepit/presentation/providers/reorder_cache_provider.dart';
 import 'package:keepit/presentation/widgets/note_card.dart';
 import 'package:keepit/src/drag_callbacks.dart';
 
@@ -16,6 +17,7 @@ class ReorderableGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notesAsync = ref.watch(mainNotesProvider);
+    final reorderedNotes = ref.watch(reorderCacheProvider);
     debugPrint('$_tag: Building widget with async notes');
 
     return SliverToBoxAdapter(
@@ -37,15 +39,30 @@ class ReorderableGrid extends ConsumerWidget {
           final crossAxisCount = (screenWidth / cardWidth).floor();
           debugPrint('$_tag: Calculated crossAxisCount: $crossAxisCount');
 
+          // Use reordered notes if available, otherwise use original notes
+          final displayNotes = reorderedNotes ?? notes;
+
           return DragMasonryGrid(
             dragCallbacks: DragCallbacks(
               onWillAccept: (moveData, data, isFront, {acceptDetails}) {
-                debugPrint('$_tag: Will accept item: ${data.key}');
                 return true;
               },
               onAccept: (moveData, data, isFront, {acceptDetails}) {
-                debugPrint(
-                    '$_tag: Accepted item: ${data.key}, moved item: ${moveData?.key}, isFront: $isFront, details: $acceptDetails');
+                if (moveData == null || acceptDetails == null) return;
+
+                // Get the actual indices from the acceptDetails
+                final oldIndex = acceptDetails.oldIndex;
+                final newIndex = acceptDetails.newIndex;
+
+                debugPrint('$_tag: Moving note from $oldIndex to $newIndex');
+
+                if (oldIndex != newIndex) {
+                  // Only update the cache, don't persist yet
+                  ref.read(reorderCacheProvider.notifier).handleReorder(
+                        oldIndex,
+                        newIndex,
+                      );
+                }
               },
               onMove: (data, details, isFront) {
                 debugPrint(
@@ -61,9 +78,6 @@ class ReorderableGrid extends ConsumerWidget {
               onDragUpdate: (details, data) {
                 debugPrint('$_tag: Drag updated item: ${data.key}');
               },
-              onDragCompleted: (data) {
-                debugPrint('$_tag: Drag completed for item: ${data.key}');
-              },
               onDragEnd: (details, item) {
                 debugPrint(
                     '$_tag: Drag ended for item: ${item.key}, details: $details');
@@ -77,16 +91,13 @@ class ReorderableGrid extends ConsumerWidget {
             isLongPressDraggable: true,
             draggingWidgetOpacity: 0,
             enableReordering: true,
-            crossAxisCount: crossAxisCount, // Use dynamic crossAxisCount
+            crossAxisCount: crossAxisCount,
             mainAxisSpacing: 4,
             crossAxisSpacing: 4,
-
-            children: notes.asMap().entries.map((entry) {
-              final index = entry.key;
+            children: displayNotes.asMap().entries.map((entry) {
               final note = entry.value;
-
               return DragGridExtentItem(
-                key: ValueKey('${note.id}_$index'),
+                key: ValueKey('${note.id}_${note.index}'),
                 widget: NoteCard(
                   note: note,
                   onTap: () => Navigator.pushNamed(

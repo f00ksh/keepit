@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/models/note.dart';
 
 class StorageService {
+  static const String _tag = 'StorageService';
   static const String notesBoxName = 'notes';
   late Box<Note> _notesBox;
 
@@ -16,7 +18,9 @@ class StorageService {
   }
 
   Future<List<Note>> getAllNotes() async {
-    final notes = _notesBox.values.toList();
+    final notes = _notesBox.values.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    debugPrint('$_tag: Retrieved ${notes.length} sorted notes');
     return notes;
   }
 
@@ -57,6 +61,8 @@ class StorageService {
   }
 
   Future<void> updateBatchNotes(List<Note> notes) async {
+    debugPrint('$_tag: Updating batch of ${notes.length} notes');
     await _notesBox.putAll({for (var note in notes) note.id: note});
+    debugPrint('$_tag: Successfully saved batch updates');
   }
 }

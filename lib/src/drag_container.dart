@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:keepit/src/drag_callbacks.dart';
 import 'package:keepit/src/models.dart';
-import 'package:keepit/src/widgets/shakeConstant/shake_default_constant.dart';
-import 'package:keepit/src/widgets/shake_widget.dart';
 
 import 'drag_item.dart';
 import 'drag_notification.dart';
@@ -254,17 +252,7 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
               Visibility(
                 maintainState: true,
                 visible: dragData != data,
-                child: widget.enableShakeAnimation && widget.isDrag
-                    ? ShakeWidget(
-                        shakeConstant: RandomShakeConstant(
-                          offsetX: const ShakeRange(min: -1.5, max: 1.5),
-                          offsetY: const ShakeRange(min: -1.5, max: 1.5),
-                          rotation: const ShakeRange(min: -0.3, max: 1.5),
-                        ),
-                        enabled: true,
-                        child: keyWidget,
-                      )
-                    : keyWidget,
+                child: keyWidget,
               ),
             if (isDragStart && !isContains(data))
               Flex(

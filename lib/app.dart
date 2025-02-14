@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Add this import
+import 'package:flutter/services.dart'; // Add this import
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/core/theme/app_theme.dart';
@@ -27,6 +27,7 @@ class MyApp extends ConsumerWidget {
     );
 
     return MaterialApp(
+      // showPerformanceOverlay: true,
       debugShowCheckedModeBanner: false,
       title: 'Keepit',
       theme: AppTheme.light().copyWith(

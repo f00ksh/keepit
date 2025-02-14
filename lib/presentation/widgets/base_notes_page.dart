@@ -4,6 +4,12 @@ import 'package:keepit/presentation/widgets/app_drawer.dart';
 import 'package:keepit/presentation/widgets/navigation_drawer_destination_item.dart';
 import 'package:keepit/presentation/widgets/search_bar.dart';
 
+final scrollControllerProvider = Provider<ScrollController>((ref) {
+  final controller = ScrollController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
+});
+
 class BaseNotesPage extends ConsumerStatefulWidget {
   final Widget content;
   final Widget? floatingActionButton;
@@ -44,6 +50,8 @@ class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scrollController = ref.watch(scrollControllerProvider);
+
     return GestureDetector(
       onTap: () => _searchFocusNode.unfocus(),
       child: Scaffold(
@@ -70,6 +78,7 @@ class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
               ),
             Expanded(
               child: CustomScrollView(
+                controller: scrollController,
                 slivers: [
                   AppSearchBar(
                     isSearchActive: false,

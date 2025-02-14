@@ -10,7 +10,6 @@ class DragMasonryGrid extends DragScrollViewBase {
   final int crossAxisCount;
   final double mainAxisSpacing;
   final double crossAxisSpacing;
-  final bool enableShakeAnimation;
   final Duration animationDuration;
 
   const DragMasonryGrid({
@@ -32,7 +31,6 @@ class DragMasonryGrid extends DragScrollViewBase {
     super.edgeScroll = 0.1,
     super.edgeScrollSpeedMilliseconds = 150,
     super.isNotDragList,
-    this.enableShakeAnimation = false,
     super.dragChildBoxDecoration,
     super.scrollViewOptions,
   });
@@ -64,6 +62,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
     required Widget Function(List<Widget>) buildItems,
   }) {
     return DragContainer(
+      key: ValueKey(widget.children.map((c) => c.key).join()),
       isDrag: widget.enableReordering,
       scrollDirection: widget.scrollViewOptions.scrollDirection,
       isLongPressDraggable: widget.isLongPressDraggable,
@@ -79,7 +78,6 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
       edgeScroll: widget.edgeScroll,
       edgeScrollSpeedMilliseconds: widget.edgeScrollSpeedMilliseconds,
       isNotDragList: widget.isNotDragList,
-      enableShakeAnimation: widget.enableShakeAnimation,
       items: (DragListItem element, DraggableWidget draggableWidget) {
         if (element is DragGridExtentItem) {
           return AnimatedContainer(

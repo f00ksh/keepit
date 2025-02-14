@@ -1,25 +1,25 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'notes_provider.dart';
+part of 'reorder_cache_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$notesHash() => r'c3853b1c5b8742db8a2d5a1f0f416c09971facdb';
+String _$reorderCacheHash() => r'e103d0d2eb660f5c58205b5dbab0931fed0fd7ec';
 
-/// See also [Notes].
-@ProviderFor(Notes)
-final notesProvider =
-    AutoDisposeAsyncNotifierProvider<Notes, List<Note>>.internal(
-  Notes.new,
-  name: r'notesProvider',
+/// See also [ReorderCache].
+@ProviderFor(ReorderCache)
+final reorderCacheProvider =
+    AutoDisposeNotifierProvider<ReorderCache, List<Note>?>.internal(
+  ReorderCache.new,
+  name: r'reorderCacheProvider',
   debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$notesHash,
+      const bool.fromEnvironment('dart.vm.product') ? null : _$reorderCacheHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$Notes = AutoDisposeAsyncNotifier<List<Note>>;
+typedef _$ReorderCache = AutoDisposeNotifier<List<Note>?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

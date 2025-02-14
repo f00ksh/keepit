@@ -7,6 +7,7 @@ import 'package:keepit/presentation/widgets/async_note_grid.dart';
 import 'package:keepit/presentation/widgets/base_notes_page.dart';
 import 'package:keepit/presentation/widgets/add_note_button.dart';
 import 'package:keepit/core/services/navigation_service.dart';
+import '../providers/reorder_cache_provider.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -24,7 +25,12 @@ class HomePage extends ConsumerWidget {
         useReorderable: screenIndex == 0,
       ),
       currentIndex: screenIndex,
-      onDestinationSelected: (index) {
+      onDestinationSelected: (index) async {
+        // Persist any pending reorder changes before navigation
+        if (ref.read(reorderCacheProvider.notifier).hasChanges) {
+          await ref.read(reorderCacheProvider.notifier).persistChanges();
+        }
+
         NavigationService.handleDestinationChange(
           context,
           ref,
