@@ -107,6 +107,22 @@ class DragGridExtentItem extends DragGridItem {
   double get mainAxisSize => mainAxisExtent;
 }
 
+class DragMasonryItem extends DragGridItem {
+  final int crossAxisCellCount;
+
+  const DragMasonryItem({
+    required super.key,
+    required this.crossAxisCellCount,
+    required super.widget,
+  });
+
+  @override
+  int get crossAxisSize => crossAxisCellCount;
+
+  @override
+  num get mainAxisSize => 0; // No fixed height
+}
+
 /// Contains information about where an element was dragged from and relocated to.
 /// Is given by the conclusion of a drag event via the [OnWillAccept] or [OnAccept] handlers
 ///

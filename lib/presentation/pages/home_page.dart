@@ -3,54 +3,116 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
-import 'package:keepit/presentation/widgets/async_note_grid.dart';
-import 'package:keepit/presentation/widgets/base_notes_page.dart';
-import 'package:keepit/presentation/widgets/add_note_button.dart';
+import 'package:keepit/presentation/widgets/app_drawer.dart';
+import 'package:keepit/presentation/widgets/note_grid.dart';
+import 'package:keepit/presentation/widgets/reorderable_grid.dart';
+import 'package:keepit/presentation/widgets/search_bar.dart';
+import 'package:keepit/presentation/widgets/sliver_empty_state.dart';
 import 'package:keepit/core/services/navigation_service.dart';
-import '../providers/reorder_cache_provider.dart';
+import 'package:keepit/core/routes/app_router.dart';
 
-class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+class HomePage extends ConsumerStatefulWidget {
+  final int initialIndex;
+
+  const HomePage({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final FocusNode _searchFocusNode = FocusNode();
+  late bool _showNavigationDrawer;
+  late final ScrollController _scrollController;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _showNavigationDrawer = MediaQuery.of(context).size.width >= 640;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenIndex = ref.watch(navigationProvider);
+    final notes = _getNotesForIndex(ref, screenIndex);
 
-    return BaseNotesPage(
-      title: 'HomePage',
-      content: AsyncNoteGrid(
-        notes: _getNotesForIndex(ref, screenIndex),
-        emptyMessage: _getEmptyMessage(screenIndex),
-        emptyIcon: _getEmptyIcon(screenIndex),
-        useReorderable: screenIndex == 0,
+    return Scaffold(
+      drawer: !_showNavigationDrawer
+          ? Builder(
+              builder: (BuildContext drawerContext) => AppDrawer(
+                currentIndex: screenIndex,
+                onDestinationSelected: (index) {
+                  if (!mounted) return;
+                  NavigationService.handleDestinationChange(
+                    drawerContext,
+                    ref,
+                    index,
+                    onIndexChanged: (index) =>
+                        ref.read(navigationProvider.notifier).setIndex(index),
+                  );
+                },
+              ),
+            )
+          : null,
+      body: GestureDetector(
+        onTap: () => _searchFocusNode.unfocus(),
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            AppSearchBar(
+              isSearchActive: false,
+              focusNode: _searchFocusNode,
+            ),
+            notes.isEmpty
+                ? SliverEmptyState(
+                    message: _getEmptyMessage(screenIndex),
+                    icon: _getEmptyIcon(screenIndex),
+                  )
+                : _buildGridForIndex(screenIndex, notes),
+          ],
+        ),
       ),
-      currentIndex: screenIndex,
-      onDestinationSelected: (index) async {
-        // Persist any pending reorder changes before navigation
-        if (ref.read(reorderCacheProvider.notifier).hasChanges) {
-          await ref.read(reorderCacheProvider.notifier).persistChanges();
-        }
-
-        NavigationService.handleDestinationChange(
-          context,
-          ref,
-          index,
-          (index) => ref.read(navigationProvider.notifier).setIndex(index),
-        );
-      },
       floatingActionButton: screenIndex == 0
-          ? const AddNoteButton(heroTag: 'home_add_note_fab')
+          ? FloatingActionButton.extended(
+              heroTag: 'add_note_fab',
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.addNote),
+              label: const Text('Add Note'),
+              icon: const Icon(Icons.add),
+            )
           : null,
     );
   }
 
-  AsyncValue<List<Note>> _getNotesForIndex(WidgetRef ref, int index) {
+  Widget _buildGridForIndex(int index, List<Note> notes) {
+    return switch (index) {
+      0 => ReorderableGrid(),
+      _ => NoteGrid(notes: notes),
+    };
+  }
+
+  List<Note> _getNotesForIndex(WidgetRef ref, int index) {
     return switch (index) {
       0 => ref.watch(mainNotesProvider),
       1 => ref.watch(favoriteNotesProvider),
       2 => ref.watch(archivedNotesProvider),
       3 => ref.watch(trashedNotesProvider),
-      _ => const AsyncValue.data([]),
+      _ => [],
     };
   }
 

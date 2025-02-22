@@ -2,7 +2,7 @@ import '../../domain/models/note.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../services/hive_stoarge_service.dart';
 
-class NoteRepositoryImpl implements NoteRepository {
+class NoteRepositoryImpl implements NoteServiceRepository {
   final StorageService _storageService;
 
   NoteRepositoryImpl(this._storageService);

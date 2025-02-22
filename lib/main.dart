@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:keepit/core/constants/app_constants.dart';
-import 'package:keepit/data/providers/supabase_providers.dart';
+import 'package:keepit/data/providers/service_providers.dart';
 import 'package:keepit/data/services/hive_stoarge_service.dart';
 import 'package:keepit/data/services/supabase_stoarge_service.dart';
 import 'package:keepit/domain/models/note.dart';

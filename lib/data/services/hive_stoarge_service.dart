@@ -20,12 +20,24 @@ class StorageService {
   Future<List<Note>> getAllNotes() async {
     final notes = _notesBox.values.toList()
       ..sort((a, b) => a.index.compareTo(b.index));
-    debugPrint('$_tag: Retrieved ${notes.length} sorted notes');
     return notes;
   }
 
   Future<void> addNote(Note note) async {
-    await _notesBox.put(note.id, note);
+    // Get existing notes and shift their indices
+    final existingNotes = await getAllNotes();
+    final updatedNotes = existingNotes.map((existingNote) {
+      return existingNote.copyWith(
+        index: existingNote.index + 1,
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+
+    // Add new note with index 0
+    await _notesBox.put(note.id, note.copyWith(index: 0));
+
+    // Update existing notes with new indices
+    await updateBatchNotes(updatedNotes);
   }
 
   Future<void> updateNote(Note note) async {

@@ -101,6 +101,8 @@ class DragContainer<T extends DragListItem> extends StatefulWidget {
 }
 
 class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
+  final _animatedListKey = GlobalKey<AnimatedListState>();
+
   Timer? _timer;
   Timer? _scrollableTimer;
   ScrollableState? _scrollable;
@@ -169,46 +171,31 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
   }
 
   void setWillAccept(T? moveData, T data, {bool isFront = true}) {
-    if (moveData == data) {
-      return;
-    }
+    if (moveData == data) return;
     if (status == AnimationStatus.completed) {
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 200), () {
         if (!DragNotification.isScroll) {
-          bool shouldReorder = true;
-          if (widget.dragCallbacks.onWillAccept != null) {
-            shouldReorder = widget.dragCallbacks.onWillAccept?.call(
-                    moveData, data, isFront,
-                    acceptDetails: acceptDetails) ??
-                false;
-          }
-
-          if (shouldReorder) {
-            final int oldIndex = originalindex!;
+          bool shouldReorder = widget.dragCallbacks.onWillAccept?.call(
+                  moveData, data, isFront,
+                  acceptDetails: acceptDetails) ??
+              true;
+          if (shouldReorder && moveData != null) {
+            final int oldIndex = widget.dataList.indexOf(moveData);
             int newIndex = widget.dataList.indexOf(data);
-            acceptDetails =
-                AcceptDetails(oldIndex: oldIndex, newIndex: newIndex);
-
-            if (moveData != null) {
-              final int oldIndex = widget.dataList.indexOf(moveData);
-              setState(() {
-                if (isFront) {
-                  widget.dataList.removeAt(oldIndex);
-                  widget.dataList.insert(newIndex, moveData);
-                } else {
-                  widget.dataList.removeAt(oldIndex);
-                  if (newIndex + 1 < widget.dataList.length) {
-                    newIndex += 1;
-                    widget.dataList.insert(newIndex, moveData);
-                  } else {
-                    widget.dataList.insert(newIndex, moveData);
-                  }
-                }
-              });
-            }
-          } else {
-            acceptDetails = null;
+            if (!isFront && newIndex + 1 < widget.dataList.length) newIndex++;
+            setState(() {
+              final removedItem = widget.dataList.removeAt(oldIndex);
+              widget.dataList.insert(newIndex, removedItem);
+            });
+            _animatedListKey.currentState?.removeItem(
+              oldIndex,
+              (context, animation) => SizeTransition(
+                sizeFactor: animation,
+                child: setDraggable(moveData),
+              ),
+            );
+            _animatedListKey.currentState?.insertItem(newIndex);
           }
         }
       });
@@ -266,13 +253,12 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
                           setWillAccept(details.data, data);
                           return true;
                         },
-                        onAcceptWithDetails: (DragTargetDetails<T> details) {
-                          if (widget.dragCallbacks.onAccept != null) {
-                            widget.dragCallbacks.onAccept?.call(
-                                details.data, data, true,
-                                acceptDetails: acceptDetails);
-                          }
-                        },
+                        onAcceptWithDetails: widget.dragCallbacks.onAccept == null
+                            ? null
+                            : (DragTargetDetails<T> details) => widget
+                                .dragCallbacks.onAccept
+                                ?.call(details.data, data, true,
+                                    acceptDetails: acceptDetails),
                         onLeave: widget.dragCallbacks.onLeave == null
                             ? null
                             : (T? moveData) => widget.dragCallbacks.onLeave

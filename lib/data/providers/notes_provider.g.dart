@@ -6,12 +6,11 @@ part of 'notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$notesHash() => r'c3853b1c5b8742db8a2d5a1f0f416c09971facdb';
+String _$notesHash() => r'c22c84a6f45277db00ec2b87904f414940ec42d5';
 
 /// See also [Notes].
 @ProviderFor(Notes)
-final notesProvider =
-    AutoDisposeAsyncNotifierProvider<Notes, List<Note>>.internal(
+final notesProvider = AutoDisposeNotifierProvider<Notes, List<Note>>.internal(
   Notes.new,
   name: r'notesProvider',
   debugGetCreateSourceHash:
@@ -20,6 +19,6 @@ final notesProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$Notes = AutoDisposeAsyncNotifier<List<Note>>;
+typedef _$Notes = AutoDisposeNotifier<List<Note>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

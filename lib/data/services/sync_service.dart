@@ -14,7 +14,7 @@ class SyncService {
     try {
       // Get local notes
       final localNotes = await _localStorage.getAllNotes();
-      
+
       // Try to get remote notes
       List<Note> remoteNotes = [];
       try {
@@ -50,7 +50,8 @@ class SyncService {
       for (final remoteNote in remoteNotes) {
         try {
           final localNote = await _localStorage.getNoteById(remoteNote.id);
-          if (localNote == null || remoteNote.updatedAt.isAfter(localNote.updatedAt)) {
+          if (localNote == null ||
+              remoteNote.updatedAt.isAfter(localNote.updatedAt)) {
             // Remote note is newer or doesn't exist locally
             await _localStorage.updateNote(remoteNote);
           }

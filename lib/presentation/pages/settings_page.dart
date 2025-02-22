@@ -4,6 +4,7 @@ import 'package:keepit/core/theme/theme_provider.dart';
 import 'package:keepit/data/providers/auth_provider.dart';
 import 'package:keepit/presentation/providers/settings_provider.dart';
 import 'package:keepit/core/routes/app_router.dart';
+import 'package:keepit/presentation/widgets/user_avatar.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -32,16 +33,9 @@ class SettingsPage extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    UserAvatar(
+                      photoUrl: user.photoUrl,
                       radius: 32,
-                      backgroundColor: colorScheme.secondaryContainer,
-                      foregroundImage: user.photoUrl != null 
-                          ? NetworkImage(user.photoUrl!) 
-                          : null,
-                      child: user.photoUrl == null
-                          ? Icon(Icons.person, 
-                              color: colorScheme.onSecondaryContainer)
-                          : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -52,12 +46,16 @@ class SettingsPage extends ConsumerWidget {
                             user.name ?? 'User',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          Text(
-                            user.email ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                          if (user.email != null)
+                            Text(
+                              user.email!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -73,8 +71,8 @@ class SettingsPage extends ConsumerWidget {
               child: Text(
                 'Appearance',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.primary,
-                ),
+                      color: colorScheme.primary,
+                    ),
               ),
             ),
             Padding(
@@ -107,8 +105,9 @@ class SettingsPage extends ConsumerWidget {
                         ],
                         selected: {themeMode},
                         onSelectionChanged: (Set<ThemeMode> selection) {
-                          ref.read(appThemeModeProvider.notifier)
-                             .setThemeMode(selection.first);
+                          ref
+                              .read(appThemeModeProvider.notifier)
+                              .setThemeMode(selection.first);
                         },
                         showSelectedIcon: false,
                       ),
@@ -136,8 +135,9 @@ class SettingsPage extends ConsumerWidget {
                         ],
                         selected: {settings.viewStyle},
                         onSelectionChanged: (Set<String> selection) {
-                          ref.read(settingsProvider.notifier)
-                             .setViewStyle(selection.first);
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setViewStyle(selection.first);
                         },
                         showSelectedIcon: false,
                       ),
@@ -148,15 +148,15 @@ class SettingsPage extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-            
+
             // Sync Settings
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 'Sync',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.primary,
-                ),
+                      color: colorScheme.primary,
+                    ),
               ),
             ),
             Material(
@@ -165,13 +165,12 @@ class SettingsPage extends ConsumerWidget {
               elevation: 0,
               child: SwitchListTile.adaptive(
                 value: settings.syncEnabled,
-                onChanged: (_) => ref.read(settingsProvider.notifier).toggleSync(),
+                onChanged: (_) =>
+                    ref.read(settingsProvider.notifier).toggleSync(),
                 title: const Text('Sync Notes'),
-                subtitle: Text(
-                  settings.syncEnabled 
-                      ? 'Notes will sync when online' 
-                      : 'Working in offline mode'
-                ),
+                subtitle: Text(settings.syncEnabled
+                    ? 'Notes will sync when online'
+                    : 'Working in offline mode'),
                 secondary: Icon(
                   Icons.sync,
                   color: colorScheme.primary,
@@ -203,9 +202,6 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
-
-
-
 
   Future<void> _showSignOutDialog(BuildContext context, WidgetRef ref) async {
     final shouldSignOut = await showDialog<bool>(

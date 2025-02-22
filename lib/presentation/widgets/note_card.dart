@@ -38,7 +38,7 @@ class NoteCard extends StatelessWidget {
                     );
                   }
                 },
-                child: noteColor == null
+                child: noteColor == Theme.of(context).colorScheme.surface
                     ? Card.outlined(
                         elevation: 0,
                         child: cardContent,

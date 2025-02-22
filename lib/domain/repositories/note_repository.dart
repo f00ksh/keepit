@@ -1,6 +1,6 @@
 import '../models/note.dart';
 
-abstract class NoteRepository {
+abstract class NoteServiceRepository {
   Future<List<Note>> getAllNotes();
   Future<void> addNote(Note note);
   Future<void> updateNote(Note note);

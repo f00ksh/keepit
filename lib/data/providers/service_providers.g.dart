@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'supabase_providers.dart';
+part of 'service_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -56,11 +56,11 @@ final syncServiceProvider = AutoDisposeProvider<SyncService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SyncServiceRef = AutoDisposeProviderRef<SyncService>;
-String _$noteRepositoryHash() => r'd0e49298d0c06c7f370ead6a52472eface6eac5f';
+String _$noteRepositoryHash() => r'694c01d84e27a524f776a0ecef59ae54378a1483';
 
 /// See also [noteRepository].
 @ProviderFor(noteRepository)
-final noteRepositoryProvider = Provider<NoteRepository>.internal(
+final noteRepositoryProvider = Provider<NoteRepositoryImpl>.internal(
   noteRepository,
   name: r'noteRepositoryProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -72,12 +72,12 @@ final noteRepositoryProvider = Provider<NoteRepository>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef NoteRepositoryRef = ProviderRef<NoteRepository>;
-String _$authServiceHash() => r'fdc04da713fcd846738693e8db5666d07e227473';
+typedef NoteRepositoryRef = ProviderRef<NoteRepositoryImpl>;
+String _$authServiceHash() => r'243440cd7ee69b7b833190c7d8d3f3a99f38f4e9';
 
 /// See also [authService].
 @ProviderFor(authService)
-final authServiceProvider = AutoDisposeProvider<AuthServiceRepository>.internal(
+final authServiceProvider = Provider<AuthServiceRepository>.internal(
   authService,
   name: r'authServiceProvider',
   debugGetCreateSourceHash:
@@ -88,6 +88,6 @@ final authServiceProvider = AutoDisposeProvider<AuthServiceRepository>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef AuthServiceRef = AutoDisposeProviderRef<AuthServiceRepository>;
+typedef AuthServiceRef = ProviderRef<AuthServiceRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

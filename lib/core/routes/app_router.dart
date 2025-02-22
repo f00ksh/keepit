@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keepit/presentation/pages/archive_page.dart';
-import 'package:keepit/presentation/pages/favorites_page.dart';
 import 'package:keepit/presentation/pages/home_page.dart';
 import 'package:keepit/presentation/pages/login_page.dart';
-import 'package:keepit/presentation/pages/note_view_page.dart';
+import 'package:keepit/presentation/pages/note_page.dart';
 import 'package:keepit/presentation/pages/settings_page.dart';
-import 'package:keepit/presentation/pages/trash_page.dart';
-import 'package:keepit/presentation/pages/add_note_page.dart';
 import 'package:keepit/data/providers/auth_provider.dart';
 
 class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
-  static const String archive = '/archive';
-  static const String favorites = '/favorites';
-  static const String trash = '/trash';
   static const String settings = '/settings';
   static const String addNote = '/add-note';
   static const String note = '/note';
@@ -30,39 +23,70 @@ class AppRouter {
         }
         return const LoginPage();
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const LoginPage(),
+      loading: () {
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      error: (error, stack) {
+        return const LoginPage();
+      },
     );
   }
 
-  /// Do not include the home route ("/") in the routes table
+  // Create a provider to handle route guards
+  static final routeGuardProvider =
+      Provider<Widget Function(BuildContext, Widget)>(
+    (ref) => (context, child) {
+      return ref.watch(authProvider).when(
+            data: (user) {
+              if (user == null &&
+                  ModalRoute.of(context)?.settings.name != AppRoutes.login) {
+                debugPrint(
+                    'RouteGuard: Unauthorized access - redirecting to login');
+                return const LoginPage();
+              }
+              return child;
+            },
+            loading: () => const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => const LoginPage(),
+          );
+    },
+  );
+
+  /// Updated routes map with route guard
   static Map<String, Widget Function(BuildContext)> routes = {
+    AppRoutes.login: (context) => const LoginPage(),
     AppRoutes.home: (context) => Consumer(
-          builder: (context, ref, _) {
-            return ref.watch(authProvider).when(
-                  data: (user) =>
-                      user != null ? const HomePage() : const LoginPage(),
-                  loading: () => const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (error, stack) => Scaffold(
-                    body: Center(child: Text('Error: $error')),
-                  ),
-                );
+          builder: (context, ref, child) {
+            final guard = ref.watch(routeGuardProvider);
+            return guard(context, const HomePage());
           },
         ),
-    AppRoutes.login: (context) => const LoginPage(),
-    AppRoutes.archive: (context) => const ArchivePage(),
-    AppRoutes.favorites: (context) => const FavoritesPage(),
-    AppRoutes.trash: (context) => const TrashPage(),
     AppRoutes.settings: (context) => const SettingsPage(),
-    AppRoutes.addNote: (context) => const AddNotePage(),
+    AppRoutes.addNote: (context) => const NotePage(
+          heroTag: 'add_note_fab',
+        ),
     AppRoutes.note: (context) {
       final noteId = ModalRoute.of(context)?.settings.arguments as String?;
       if (noteId == null) return const HomePage();
-      return NotePage(noteId: noteId);
+
+      return Consumer(
+        builder: (context, ref, child) {
+          final guard = ref.watch(routeGuardProvider);
+          return guard(
+            context,
+            NotePage(
+              noteId: noteId,
+              heroTag: 'note_$noteId',
+            ),
+          );
+        },
+      );
     },
   };
 

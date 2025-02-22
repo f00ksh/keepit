@@ -1,4 +1,4 @@
-import 'package:keepit/data/providers/supabase_providers.dart';
+import 'package:keepit/data/providers/service_providers.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hive/hive.dart';
@@ -13,7 +13,7 @@ class Auth extends _$Auth {
   @override
   Stream<AppUser?> build() async* {
     _box = await Hive.openBox<AppUser>(_boxName);
-    
+
     // First check Supabase auth state
     final supabaseUser = await ref.read(authServiceProvider).getCurrentUser();
     if (supabaseUser != null) {
@@ -50,19 +50,19 @@ class Auth extends _$Auth {
     try {
       final currentUser = state.valueOrNull;
       final authData = await ref.read(authServiceProvider).signInWithGoogle();
-      
+
       // If user was anonymous, keep their ID for data migration
       final user = currentUser?.isAnonymous == true
           ? currentUser!.copyWithAuthData(authData.toJson())
           : AppUser.fromJson(authData.toJson());
-      
+
       await _box.put('current_user', user);
-      
+
       // If we have a previous anonymous ID, migrate the data
       if (user.previousAnonymousId != null) {
         await _migrateAnonymousData(user.previousAnonymousId!, user.id);
       }
-      
+
       state = AsyncData(user);
     } catch (e, stack) {
       state = AsyncError(e, stack);
@@ -101,7 +101,7 @@ class Auth extends _$Auth {
     // Migrate notes from anonymous user to authenticated user
     final notesBox = await Hive.openBox<Note>('notes');
     final notes = notesBox.values.where((note) => note.id == oldId);
-    
+
     for (final note in notes) {
       final updatedNote = note.copyWith(id: newId);
       await notesBox.put(updatedNote.id, updatedNote);

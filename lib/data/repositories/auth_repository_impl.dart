@@ -1,14 +1,16 @@
 // ignore_for_file: avoid_print
 
+import 'package:flutter/material.dart';
 import 'package:keepit/domain/models/user.dart';
+import 'package:keepit/domain/repositories/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import '../../domain/repositories/auth_service_repository.dart';
 import '../../core/constants/app_constants.dart';
 
 class AuthRepositoryImpl implements AuthServiceRepository {
   final SupabaseClient _client;
-  bool _isOfflineMode = true;  // Start in offline mode by default
+  bool _isOfflineMode =
+      false; // Changed to false to enable online features by default
 
   AuthRepositoryImpl(this._client);
 
@@ -42,14 +44,14 @@ class AuthRepositoryImpl implements AuthServiceRepository {
 
       final response = await _client.auth.signInAnonymously();
       final user = response.user;
-      
+
       if (user == null) {
         throw Exception('Failed to create anonymous user');
       }
 
-      await _createOrUpdateUserProfile(user);
-      return AppUser.fromJson(user.toJson());
-
+      final appUser = AppUser.fromJson(user.toJson());
+      await _createOrUpdateUserProfile(appUser);
+      return appUser;
     } catch (e) {
       print('Anonymous sign in error: $e');
       throw Exception('Failed to sign in anonymously: $e');
@@ -59,72 +61,54 @@ class AuthRepositoryImpl implements AuthServiceRepository {
   @override
   Future<AppUser> signInWithGoogle() async {
     try {
-      print('Starting Google sign in...');
-
-      // Clear any existing sessions before starting new sign in
-      if (_client.auth.currentSession != null) {
-        await _client.auth.signOut();
-      }
-
+      debugPrint('Starting Google sign in...');
       final response = await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: AppConstants.redirectUrl,
-        queryParams: {
-          'access_type': 'offline',
-          'prompt': 'select_account',
-        },
-        authScreenLaunchMode: LaunchMode.platformDefault,
       );
 
-      print('OAuth response: $response');
+      if (!response) throw Exception('Google sign in failed');
 
-      if (!response) {
-        throw Exception('Google sign in failed: No response');
-      }
+      // Wait for session to be available
+      await Future.delayed(const Duration(seconds: 2));
 
-      // Wait for auth state change with timeout
-      print('Waiting for auth state change...');
-      final authResponse = await _client.auth.onAuthStateChange
-          .where((state) => state.event == AuthChangeEvent.signedIn)
-          .first
-          .timeout(
-            const Duration(minutes: 1),
-            onTimeout: () => throw Exception('Sign in timeout'),
-          );
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('No user after Google sign in');
 
-      final user = authResponse.session?.user;
-      if (user == null) {
-        throw Exception('User not found after sign in');
-      }
+      debugPrint('Google sign in successful. Metadata: ${user.userMetadata}');
 
-      print('User signed in successfully: ${user.email}');
+      final appUser = AppUser.fromJson({
+        'id': user.id,
+        'email': user.email,
+        'user_metadata': user.userMetadata,
+        'is_anonymous': false,
+      });
 
-      // Create or update user profile
-      await _createOrUpdateUserProfile(user);
-
-      return AppUser.fromJson(user.toJson());
-    } on AuthException catch (e) {
-      print('Auth Exception: ${e.message}, Status: ${e.statusCode}');
-      throw Exception('Authentication failed: ${e.message}');
+      debugPrint('Created AppUser with photo: ${appUser.photoUrl}');
+      return appUser;
     } catch (e) {
-      print('Sign in error: $e');
-      throw Exception('Sign in failed: ${e.toString()}');
+      debugPrint('Google sign in error: $e');
+      throw Exception('Failed to sign in with Google: $e');
     }
   }
 
-  Future<void> _createOrUpdateUserProfile(user) async {
+  Future<void> _createOrUpdateUserProfile(AppUser user) async {
     try {
-      print('Updating user profile...');
+      debugPrint('Updating profile for user: ${user.id}');
+      debugPrint('Profile data: ${user.toJson()}');
+
       await _client.from('profiles').upsert({
         'id': user.id,
         'email': user.email,
-        'full_name': user.userMetadata?['full_name'],
-        'avatar_url': user.userMetadata?['avatar_url'],
+        'full_name': user.name,
+        'avatar_url': user.photoUrl,
         'updated_at': DateTime.now().toIso8601String(),
       });
-      print('Profile updated successfully');
+
+      debugPrint('Profile updated successfully');
     } catch (e) {
-      print('Error updating user profile: $e');
+      debugPrint('Error updating profile: $e');
+      // Don't throw the error as profile update is not critical
     }
   }
 
@@ -141,14 +125,30 @@ class AuthRepositoryImpl implements AuthServiceRepository {
 
   @override
   Stream<AppUser?> get authStateChanges {
-    if (_isOfflineMode) {
-      // Return a stream that emits null once for offline mode
-      return Stream.value(null);
-    }
-    return _client.auth.onAuthStateChange.map((event) {
+    if (_isOfflineMode) return Stream.value(null);
+
+    return _client.auth.onAuthStateChange.asyncMap((event) async {
       final user = event.session?.user;
-      print('Auth state changed: ${event.event}, User: ${user?.email}');
-      return user == null ? null : AppUser.fromJson(user.toJson());
+      debugPrint('Auth state changed: ${event.event}, User: ${user?.email}');
+
+      if (user != null) {
+        // Get full user data including metadata
+        final metadata = user.userMetadata;
+        debugPrint('User metadata: $metadata');
+
+        final appUser = AppUser.fromJson({
+          'id': user.id,
+          'email': user.email,
+          'user_metadata': metadata,
+          'is_anonymous': false,
+        });
+
+        // Try to update profile but don't wait for it
+        _createOrUpdateUserProfile(appUser);
+
+        return appUser;
+      }
+      return null;
     });
   }
 
@@ -163,8 +163,9 @@ class AuthRepositoryImpl implements AuthServiceRepository {
       final user = response.user;
       if (user == null) throw Exception('User not found after sign in');
 
-      await _createOrUpdateUserProfile(user);
-      return AppUser.fromJson(user.toJson());
+      final appUser = AppUser.fromJson(user.toJson());
+      await _createOrUpdateUserProfile(appUser);
+      return appUser;
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -181,8 +182,9 @@ class AuthRepositoryImpl implements AuthServiceRepository {
       final user = response.user;
       if (user == null) throw Exception('User not found after sign up');
 
-      await _createOrUpdateUserProfile(user);
-      return AppUser.fromJson(user.toJson());
+      final appUser = AppUser.fromJson(user.toJson());
+      await _createOrUpdateUserProfile(appUser);
+      return appUser;
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -196,6 +198,7 @@ class AuthRepositoryImpl implements AuthServiceRepository {
   }
 
   // Method to toggle offline mode
+  @override
   Future<void> setOfflineMode(bool enabled) async {
     _isOfflineMode = enabled;
     if (enabled) {

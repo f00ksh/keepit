@@ -6,16 +6,23 @@ class NavigationService {
   static void handleDestinationChange(
     BuildContext context,
     WidgetRef ref,
-    int index,
-    Function(int) setState,
-  ) {
+    int index, {
+    void Function(int)? onIndexChanged,
+  }) {
+    // Handle Settings navigation (assuming it's the last index)
     if (index == 4) {
-      // Settings
+      // Adjust index as needed for your settings
       Navigator.pushNamed(context, AppRoutes.settings);
-      setState(0);
       return;
     }
-    setState(index);
+
+    // Handle regular tab navigation
+    onIndexChanged?.call(index);
+
+    // Close drawer if open
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   static String getTitleForIndex(int index) {

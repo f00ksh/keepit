@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
-
 part 'note_view_provider.g.dart';
 
 /// Provider for managing a single note's state while being viewed/edited
@@ -11,14 +11,22 @@ class NoteView extends _$NoteView {
 
   @override
   Note build(String noteId) {
-    // Get initial note state
-    final note = ref.read(notesProvider).valueOrNull?.firstWhere(
-          (note) => note.id == noteId,
-          orElse: () => throw Exception('Note not found'),
-        );
+    final notes = ref.watch(notesProvider);
+    return notes.firstWhere(
+      (Note note) => note.id == noteId,
+      orElse: () => _createNewNote(noteId),
+    );
+  }
 
-    if (note == null) throw Exception('Note not found');
-    return note;
+  Note _createNewNote(String noteId) {
+    return Note(
+      id: noteId,
+      title: '',
+      content: '',
+      colorIndex: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 
   void updateTitle(String title) {
@@ -60,6 +68,7 @@ class NoteView extends _$NoteView {
       colorIndex: colorIndex,
       updatedAt: DateTime.now(),
     );
+
     _isDirty = true;
   }
 
@@ -80,15 +89,21 @@ class NoteView extends _$NoteView {
     _isDirty = true;
   }
 
-  Future<void> saveChanges() async {
+  Future<void> saveNote() async {
     if (!_isDirty) return;
 
+    final notesNotifier = ref.read(notesProvider.notifier);
+    final notes = ref.read(notesProvider);
+
     try {
-      // Save through notes provider
-      await ref.read(notesProvider.notifier).updateNote(state.id, state);
+      if (notes.any((note) => note.id == state.id)) {
+        await notesNotifier.updateNote(state.id, state);
+      } else {
+        await notesNotifier.addNote(state);
+      }
       _isDirty = false;
     } catch (e) {
-      print('Error saving note: $e');
+      debugPrint('Error saving note: $e');
     }
   }
 

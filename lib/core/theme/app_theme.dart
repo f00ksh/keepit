@@ -50,7 +50,11 @@ class AppTheme {
 
 Color? getNoteColor(BuildContext context, int colorIndex) {
   if (colorIndex == AppTheme.noColorIndex) return null;
+
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final colors = isDark ? AppTheme.darkColors : AppTheme.lightColors;
-  return colors[colorIndex];
+  final color = colors[colorIndex];
+
+  // Return surface color if the color is null (first item in the list)
+  return color ?? Theme.of(context).colorScheme.surface;
 }

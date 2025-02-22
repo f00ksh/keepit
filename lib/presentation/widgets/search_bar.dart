@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keepit/presentation/providers/search_provider.dart';
 import 'package:keepit/data/providers/auth_provider.dart';
 
 class AppSearchBar extends ConsumerWidget {
@@ -32,16 +31,12 @@ class AppSearchBar extends ConsumerWidget {
           children: [
             SearchBar(
               focusNode: focusNode,
-              onChanged: (value) =>
-                  ref.read(searchQueryProvider.notifier).update(value),
-              leading: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () {
-                    focusNode?.unfocus();
-                    Scaffold.of(context).openDrawer();
-                  },
-                ),
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  focusNode?.unfocus();
+                  Scaffold.of(context).openDrawer();
+                },
               ),
               constraints: const BoxConstraints.tightFor(height: 47),
               hintText: 'Search notes...',

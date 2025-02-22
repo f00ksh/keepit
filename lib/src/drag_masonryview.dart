@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'
+    show MasonryGridView; // Only import MasonryGridView
 import 'package:keepit/src/drag_container.dart';
 import 'package:keepit/src/drag_notification.dart';
 import 'package:keepit/src/drag_scrollview_base.dart';
@@ -62,7 +63,6 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
     required Widget Function(List<Widget>) buildItems,
   }) {
     return DragContainer(
-      key: ValueKey(widget.children.map((c) => c.key).join()),
       isDrag: widget.enableReordering,
       scrollDirection: widget.scrollViewOptions.scrollDirection,
       isLongPressDraggable: widget.isLongPressDraggable,
@@ -79,21 +79,9 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
       edgeScrollSpeedMilliseconds: widget.edgeScrollSpeedMilliseconds,
       isNotDragList: widget.isNotDragList,
       items: (DragListItem element, DraggableWidget draggableWidget) {
-        if (element is DragGridExtentItem) {
-          return AnimatedContainer(
-            duration: widget.animationDuration,
-            curve: Curves.easeInOut,
-            child: SizedBox(
-              width: element.mainAxisExtent,
-              key: ValueKey(element.key.toString()),
-              child: draggableWidget(element.widget),
-            ),
-          );
-        } else {
-          throw FlutterError(
-            'Item should be of type DragGridExtentItem for masonry layout.',
-          );
-        }
+        // Return just the widget, no StaggeredGridTile
+        return Container(
+            key: ValueKey(element.key), child: draggableWidget(element.widget));
       },
       dataList: _children,
     );
@@ -102,39 +90,34 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
   @override
   Widget build(BuildContext context) {
     return DragNotification(
-      child: SingleChildScrollView(
-        scrollDirection: widget.scrollViewOptions.scrollDirection,
-        reverse: widget.scrollViewOptions.reverse,
-        controller: widget.scrollViewOptions.controller,
-        primary: widget.scrollViewOptions.primary,
-        physics: widget.scrollViewOptions.physics,
-        padding: widget.scrollViewOptions.padding,
-        dragStartBehavior: widget.scrollViewOptions.dragStartBehavior,
-        keyboardDismissBehavior:
-            widget.scrollViewOptions.keyboardDismissBehavior,
-        restorationId: widget.scrollViewOptions.restorationId,
-        clipBehavior: widget.scrollViewOptions.clipBehavior,
-        child: buildContainer(
-          buildItems: (List<Widget> children) {
-            return MasonryGridView.count(
-              padding:
-                  const EdgeInsets.only(right: 4, left: 4, bottom: 25, top: 12),
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              crossAxisCount: widget.crossAxisCount,
-              mainAxisSpacing: widget.mainAxisSpacing,
-              crossAxisSpacing: widget.crossAxisSpacing,
-              itemCount: children.length,
-              itemBuilder: (context, index) {
-                return AnimatedContainer(
-                  duration: widget.animationDuration,
-                  curve: Curves.easeInOut,
-                  child: children[index],
-                );
-              },
-            );
-          },
-        ),
+      child: buildContainer(
+        buildItems: (List<Widget> children) {
+          return MasonryGridView.count(
+            shrinkWrap: true,
+            padding:
+                const EdgeInsets.only(right: 4, left: 4, bottom: 25, top: 12),
+            scrollDirection: widget.scrollViewOptions.scrollDirection,
+            reverse: widget.scrollViewOptions.reverse,
+            controller: widget.scrollViewOptions.controller,
+            primary: widget.scrollViewOptions.primary,
+            physics: widget.scrollViewOptions.physics,
+            dragStartBehavior: widget.scrollViewOptions.dragStartBehavior,
+            keyboardDismissBehavior:
+                widget.scrollViewOptions.keyboardDismissBehavior,
+            clipBehavior: widget.scrollViewOptions.clipBehavior,
+            crossAxisCount: widget.crossAxisCount,
+            mainAxisSpacing: widget.mainAxisSpacing,
+            crossAxisSpacing: widget.crossAxisSpacing,
+            itemCount: children.length,
+            itemBuilder: (context, index) {
+              // Wrap each child in an AnimatedContainer
+              return AnimatedContainer(
+                duration: widget.animationDuration,
+                child: children[index],
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -78,24 +78,33 @@ class NoteActions extends ConsumerWidget {
 
     switch (action) {
       case 'favorite':
-        await notifier.toggleFavorite(note.id, !note.isFavorite);
-        break;
       case 'unfavorite':
-        await notifier.toggleFavorite(note.id, !note.isFavorite);
-
+        await notifier.updateNoteStatus(
+          note.id,
+          isFavorite: !note.isFavorite,
+        );
         break;
+
       case 'archive':
-        await notifier.toggleArchive(note.id, !note.isArchived);
-        break;
       case 'unarchive':
-        await notifier.toggleArchive(note.id, !note.isArchived);
+        await notifier.updateNoteStatus(
+          note.id,
+          isArchived: !note.isArchived,
+        );
         break;
-      case 'delete':
-        await notifier.moveToTrash(note.id);
 
+      case 'delete':
+        await notifier.updateNoteStatus(
+          note.id,
+          isDeleted: true,
+        );
         break;
+
       case 'restore':
-        await notifier.restoreFromTrash(note.id);
+        await notifier.updateNoteStatus(
+          note.id,
+          isDeleted: false,
+        );
         break;
     }
   }

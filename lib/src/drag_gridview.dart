@@ -79,7 +79,6 @@ class _ReorderableGridViewState extends State<DragGridView> {
       edgeScroll: widget.edgeScroll,
       edgeScrollSpeedMilliseconds: widget.edgeScrollSpeedMilliseconds,
       isNotDragList: widget.isNotDragList,
-      enableShakeAnimation: widget.enableShakeAnimation,
       items: (DragListItem element, DraggableWidget draggableWidget) {
         if (element is DragGridCountItem) {
           return StaggeredGridTile.count(
