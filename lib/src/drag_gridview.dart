@@ -122,7 +122,6 @@ class _ReorderableGridViewState extends State<DragGridView> {
           buildItems: (List<Widget> children) {
             return StaggeredGrid.count(
               crossAxisCount: widget.crossAxisCount,
-              axisDirection: widget.axisDirection,
               mainAxisSpacing: widget.mainAxisSpacing,
               crossAxisSpacing: widget.crossAxisSpacing,
               children: children,

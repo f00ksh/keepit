@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/widgets/note_card.dart';
 import 'package:keepit/core/routes/app_router.dart';
+import 'package:keepit/src/drag_callbacks.dart';
+import 'package:keepit/src/drag_gridview.dart';
+import 'package:keepit/src/models.dart';
 
 class NoteGrid extends ConsumerWidget {
   final List<Note> notes;
@@ -15,26 +18,57 @@ class NoteGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SliverMasonryGrid.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      itemBuilder: (context, index) {
-        final note = notes[index];
-        return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: NoteCard(
+    return SliverToBoxAdapter(
+      child: DragGridView(
+        dragCallbacks: DragCallbacks(
+          onAccept: (moveData, data, isFront, {acceptDetails}) {
+            if (moveData == null || acceptDetails == null) return;
+            final oldIndex = acceptDetails.oldIndex;
+            final newIndex = acceptDetails.newIndex;
+
+            if (oldIndex != newIndex) {
+              final updatedNotes = List<Note>.from(notes);
+              final item = updatedNotes.removeAt(oldIndex);
+              // Adjust newIndex if moving item forward
+              final adjustedNewIndex =
+                  newIndex > oldIndex ? newIndex - 1 : newIndex;
+              updatedNotes.insert(adjustedNewIndex, item);
+
+              // Update indices and persist changes directly
+              final notesToUpdate = updatedNotes.asMap().entries.map((entry) {
+                return entry.value.copyWith(
+                  index: entry.key,
+                );
+              }).toList();
+
+              ref.read(notesProvider.notifier).updateBatchNotes(notesToUpdate);
+            }
+          },
+        ),
+        edgeScrollSpeedMilliseconds: 300,
+        edgeScroll: .3,
+        isDragNotification: true,
+        draggingWidgetOpacity: .01,
+        enableReordering: true,
+        crossAxisCount: 2,
+        children: List.generate(notes.length, (index) {
+          final note = notes[index];
+          return DragGridCountItem(
+            crossAxisCellCount: 1,
             key: ValueKey(note.id),
-            note: note,
-            onTap: () => Navigator.pushNamed(
-              context,
-              AppRoutes.note,
-              arguments: note.id,
+            widget: NoteCard(
+              key: ValueKey(note.id),
+              note: note,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.note,
+                arguments: note.id,
+              ),
             ),
-          ),
-        );
-      },
-      childCount: notes.length,
+            mainAxisCellCount: 1,
+          );
+        }),
+      ),
     );
   }
 }

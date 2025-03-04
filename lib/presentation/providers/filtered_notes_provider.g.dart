@@ -72,7 +72,7 @@ final mainNotesProvider = AutoDisposeProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MainNotesRef = AutoDisposeProviderRef<List<Note>>;
-String _$filteredNotesHash() => r'564dceb44b0a5b7d205f58b28d926205018c1f55';
+String _$labelNotesHash() => r'e39a16bba58fd5e745afbd93ed506032dab57eae';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -94,6 +94,136 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
+
+/// See also [labelNotes].
+@ProviderFor(labelNotes)
+const labelNotesProvider = LabelNotesFamily();
+
+/// See also [labelNotes].
+class LabelNotesFamily extends Family<List<Note>> {
+  /// See also [labelNotes].
+  const LabelNotesFamily();
+
+  /// See also [labelNotes].
+  LabelNotesProvider call(
+    String labelId,
+  ) {
+    return LabelNotesProvider(
+      labelId,
+    );
+  }
+
+  @override
+  LabelNotesProvider getProviderOverride(
+    covariant LabelNotesProvider provider,
+  ) {
+    return call(
+      provider.labelId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'labelNotesProvider';
+}
+
+/// See also [labelNotes].
+class LabelNotesProvider extends AutoDisposeProvider<List<Note>> {
+  /// See also [labelNotes].
+  LabelNotesProvider(
+    String labelId,
+  ) : this._internal(
+          (ref) => labelNotes(
+            ref as LabelNotesRef,
+            labelId,
+          ),
+          from: labelNotesProvider,
+          name: r'labelNotesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$labelNotesHash,
+          dependencies: LabelNotesFamily._dependencies,
+          allTransitiveDependencies:
+              LabelNotesFamily._allTransitiveDependencies,
+          labelId: labelId,
+        );
+
+  LabelNotesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.labelId,
+  }) : super.internal();
+
+  final String labelId;
+
+  @override
+  Override overrideWith(
+    List<Note> Function(LabelNotesRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: LabelNotesProvider._internal(
+        (ref) => create(ref as LabelNotesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        labelId: labelId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<List<Note>> createElement() {
+    return _LabelNotesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LabelNotesProvider && other.labelId == labelId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, labelId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin LabelNotesRef on AutoDisposeProviderRef<List<Note>> {
+  /// The parameter `labelId` of this provider.
+  String get labelId;
+}
+
+class _LabelNotesProviderElement extends AutoDisposeProviderElement<List<Note>>
+    with LabelNotesRef {
+  _LabelNotesProviderElement(super.provider);
+
+  @override
+  String get labelId => (origin as LabelNotesProvider).labelId;
+}
+
+String _$filteredNotesHash() => r'564dceb44b0a5b7d205f58b28d926205018c1f55';
 
 abstract class _$FilteredNotes
     extends BuildlessAutoDisposeNotifier<List<Note>> {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keepit/data/providers/labels_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
+import 'package:keepit/presentation/providers/selected_label_provider.dart';
 import 'package:keepit/presentation/widgets/app_drawer.dart';
 import 'package:keepit/presentation/widgets/note_grid.dart';
 import 'package:keepit/presentation/widgets/reorderable_grid.dart';
@@ -50,7 +52,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenIndex = ref.watch(navigationProvider);
+    final selectedLabel = ref.watch(selectedLabelProvider);
+    debugPrint(
+        'HomePage build - screenIndex: $screenIndex, selectedLabel: $selectedLabel');
+
     final notes = _getNotesForIndex(ref, screenIndex);
+    debugPrint('HomePage build - notes count: ${notes.length}');
 
     return Scaffold(
       drawer: !_showNavigationDrawer
@@ -100,6 +107,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildGridForIndex(int index, List<Note> notes) {
+    final selectedLabel = ref.watch(selectedLabelProvider);
+    debugPrint(
+        'Building grid for index: $index, selectedLabel: $selectedLabel');
+    debugPrint('Notes count: ${notes.length}');
+
     return switch (index) {
       0 => ReorderableGrid(),
       _ => NoteGrid(notes: notes),
@@ -107,22 +119,44 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   List<Note> _getNotesForIndex(WidgetRef ref, int index) {
-    return switch (index) {
+    final selectedLabel = ref.watch(selectedLabelProvider);
+    debugPrint(
+        'Getting notes for index: $index, selectedLabel: $selectedLabel');
+
+    if (selectedLabel != null) {
+      final labelNotes = ref.watch(notesByLabelIdProvider(selectedLabel));
+      debugPrint('Label notes count: ${labelNotes.length}');
+      return labelNotes;
+    }
+
+    final notes = switch (index) {
       0 => ref.watch(mainNotesProvider),
       1 => ref.watch(favoriteNotesProvider),
       2 => ref.watch(archivedNotesProvider),
       3 => ref.watch(trashedNotesProvider),
-      _ => [],
+      _ => const <Note>[],
     };
+    debugPrint('Regular notes count for index $index: ${notes.length}');
+    return notes;
   }
 
   String _getEmptyMessage(int index) {
+    final selectedLabel = ref.watch(selectedLabelProvider);
+    debugPrint(
+        'Getting empty message for index: $index, selectedLabel: $selectedLabel');
+
+    if (selectedLabel != null) {
+      final label = ref.watch(labelByIdProvider(selectedLabel));
+      debugPrint('Label name: ${label?.name}');
+      return 'No notes with label "${label?.name ?? ''}"';
+    }
+
     return switch (index) {
       0 => 'No notes',
       1 => 'No favorite notes',
       2 => 'No archived notes',
       3 => 'No notes in trash',
-      _ => '',
+      _ => 'No notes with this label',
     };
   }
 

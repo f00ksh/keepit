@@ -38,6 +38,9 @@ class Note {
   @HiveField(10)
   final int index;
 
+  @HiveField(11)
+  final List<String> labelIds;
+
   Note({
     required this.id,
     required this.title,
@@ -50,6 +53,7 @@ class Note {
     this.isArchived = false,
     this.isDeleted = false,
     this.index = 0,
+    this.labelIds = const [],
   });
 
   Note copyWith({
@@ -64,6 +68,7 @@ class Note {
     bool? isArchived,
     bool? isDeleted,
     int? index,
+    List<String>? labelIds,
   }) {
     return Note(
       id: id ?? this.id,
@@ -77,6 +82,7 @@ class Note {
       isArchived: isArchived ?? this.isArchived,
       isDeleted: isDeleted ?? this.isDeleted,
       index: index ?? this.index,
+      labelIds: labelIds ?? this.labelIds,
     );
   }
 
@@ -93,6 +99,7 @@ class Note {
       'is_archived': isArchived,
       'is_deleted': isDeleted,
       'index': index,
+      'label_ids': labelIds,
     };
   }
 
@@ -109,6 +116,7 @@ class Note {
       isArchived: json['is_archived'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
       index: json['index'] ?? 0,
+      labelIds: (json['label_ids'] as List?)?.cast<String>() ?? [],
     );
   }
 }

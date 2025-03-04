@@ -5,6 +5,7 @@ import 'package:keepit/core/constants/app_constants.dart';
 import 'package:keepit/data/providers/service_providers.dart';
 import 'package:keepit/data/services/hive_stoarge_service.dart';
 import 'package:keepit/data/services/supabase_stoarge_service.dart';
+import 'package:keepit/domain/models/label.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/domain/models/settings.dart';
 import 'package:keepit/domain/models/user.dart';
@@ -17,8 +18,11 @@ void main() async {
 
   // Initialize Hive
   await Hive.initFlutter();
+
+  // Register adapters
   Hive.registerAdapter(AppUserAdapter());
   Hive.registerAdapter(NoteAdapter());
+  Hive.registerAdapter(LabelAdapter());
   Hive.registerAdapter(SettingAdapter());
 
   // Initialize Supabase with your actual credentials
@@ -27,10 +31,13 @@ void main() async {
     anonKey: AppConstants.anonKey,
   );
 
+  // Initialize services
   final storageService = StorageService();
   await storageService.init();
+
   final supabaseService = SupabaseService(Supabase.instance.client);
   await supabaseService.init();
+
   final authService = AuthRepositoryImpl(Supabase.instance.client);
 
   runApp(

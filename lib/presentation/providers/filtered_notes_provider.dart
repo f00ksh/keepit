@@ -30,6 +30,12 @@ List<Note> mainNotes(ref) {
       .toList();
 }
 
+@riverpod
+List<Note> labelNotes(ref, String labelId) {
+  final notes = ref.watch(notesProvider);
+  return notes.where((note) => note.labelIds.contains(labelId)).toList();
+}
+
 // For custom search/filter
 @riverpod
 class FilteredNotes extends _$FilteredNotes {

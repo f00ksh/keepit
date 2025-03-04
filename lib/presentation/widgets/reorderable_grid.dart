@@ -47,18 +47,30 @@ class ReorderableGrid extends ConsumerWidget {
           }
         },
       ),
-      edgeScrollSpeedMilliseconds: 200,
-      edgeScroll: .35,
+      edgeScrollSpeedMilliseconds: 300,
+      edgeScroll: .3,
       isDragNotification: true,
-      isLongPressDraggable: true,
       draggingWidgetOpacity: 0,
       enableReordering: true,
       crossAxisCount: crossAxisCount,
+      buildFeedback: (listItem, data, size) {
+        return Material(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              width: 3,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: data,
+        );
+      },
       children: notes.asMap().entries.map(
         (entry) {
           final note = entry.value;
           return DragMasonryItem(
-            key: ValueKey('${note.id}_${note.index}'),
+            key: ValueKey(note.id),
             widget: NoteCard(
               note: note,
               onTap: () => Navigator.pushNamed(

@@ -1,4 +1,6 @@
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/data/providers/service_providers.dart';
+import 'package:keepit/data/seed/initial_notes.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hive/hive.dart';
@@ -39,6 +41,10 @@ class Auth extends _$Auth {
     try {
       final anonymousUser = AppUser.anonymous();
       await _box.put('current_user', anonymousUser);
+      // Inject initial notes
+      final notesNotifier = ref.read(notesProvider.notifier);
+      final initialNotes = NotesSeeder.generateInitialNotes();
+      await notesNotifier.updateBatchNotes(initialNotes);
       state = AsyncData(anonymousUser);
     } catch (e, stack) {
       state = AsyncError(e, stack);

@@ -37,7 +37,6 @@ class MyApp extends ConsumerWidget {
         platform: TargetPlatform.android,
       ),
       themeMode: themeMode,
-      initialRoute: AppRoutes.home,
       routes: AppRouter.routes,
       onGenerateRoute: AppRouter.onGenerateRoute,
       onUnknownRoute: AppRouter.onUnknownRoute,

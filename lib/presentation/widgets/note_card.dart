@@ -3,6 +3,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/core/utils/error_handler.dart';
 import 'package:keepit/domain/models/note.dart';
+import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/note_hero.dart';
 
 class NoteCard extends StatelessWidget {
@@ -18,8 +19,10 @@ class NoteCard extends StatelessWidget {
       child: _buildNoteContent(),
     );
 
+    final heroTag = 'note_${note.id}';
+
     return NoteHeroWidget(
-        tag: 'note_${note.id}',
+        tag: heroTag,
         child: Material(
           color: Colors.transparent,
           child: SizedBox(
@@ -41,15 +44,49 @@ class NoteCard extends StatelessWidget {
                 child: noteColor == Theme.of(context).colorScheme.surface
                     ? Card.outlined(
                         elevation: 0,
-                        child: cardContent,
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            cardContent,
+                            if (note.labelIds.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 8.0,
+                                  left: 10,
+                                  right: 10,
+                                  bottom: 10,
+                                ),
+                                child: NoteLabelsSection(note: note),
+                              ),
+                          ],
+                        ),
                       )
                     : Card(
                         elevation: 0,
                         color: noteColor,
+                        clipBehavior: Clip.antiAlias,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: cardContent,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            cardContent,
+                            if (note.labelIds.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 8.0,
+                                  left: 10,
+                                  right: 10,
+                                  bottom: 10,
+                                ),
+                                child: NoteLabelsSection(note: note),
+                              ),
+                          ],
+                        ),
                       ),
               ),
             ),

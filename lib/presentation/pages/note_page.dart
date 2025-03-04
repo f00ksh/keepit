@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/note_view_provider.dart';
+import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/note_hero.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -25,6 +27,7 @@ class _NotePageState extends ConsumerState<NotePage> {
   late String _noteId;
   late TextEditingController _titleController;
   late TextEditingController _contentController;
+  late String _heroTag; // Add hero tag state variable that can be updated
 
   @override
   void initState() {
@@ -32,6 +35,7 @@ class _NotePageState extends ConsumerState<NotePage> {
     _noteId = widget.noteId ?? const Uuid().v4();
     _titleController = TextEditingController();
     _contentController = TextEditingController();
+    _heroTag = widget.heroTag; // Initialize with the provided hero tag
 
     // Initialize controllers after the first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,17 +60,42 @@ class _NotePageState extends ConsumerState<NotePage> {
       onPopInvokedWithResult: (didPop, result) async {
         // Save note if it has content
         if (note.title.isNotEmpty || note.content.isNotEmpty) {
+          // If this is a new note (using the temporary hero tag), update the hero tag to match the note's ID
+          if (widget.noteId == null && _heroTag == widget.heroTag) {
+            setState(() {
+              _heroTag = 'note_$_noteId'; // Use the same format as note cards
+            });
+          }
           await ref.read(noteViewProvider(_noteId).notifier).saveNote();
         }
       },
       child: NoteHeroWidget(
-        tag: widget.heroTag,
-        child: Scaffold(
-          backgroundColor: getNoteColor(context, note.colorIndex),
-          appBar: _buildAppBar(note),
-          body: _buildContent(note),
-          bottomNavigationBar: _buildEditInfo(note),
-          bottomSheet: null,
+        tag: _heroTag, // Use the updatable hero tag
+        child: Builder(
+          builder: (context) {
+            // Save the note after the hero animation completes
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (note.title.isNotEmpty || note.content.isNotEmpty) {
+                ref.read(noteViewProvider(_noteId).notifier).saveNote();
+
+                // If this is a new note, update the hero tag after saving
+                if (widget.noteId == null && _heroTag == widget.heroTag) {
+                  setState(() {
+                    _heroTag =
+                        'note_$_noteId'; // Update to match note card format
+                  });
+                }
+              }
+            });
+
+            return Scaffold(
+              backgroundColor: getNoteColor(context, note.colorIndex),
+              appBar: _buildAppBar(note),
+              body: _buildContent(note),
+              bottomNavigationBar: _buildEditInfo(note),
+              bottomSheet: null,
+            );
+          },
         ),
       ),
     );
@@ -171,6 +200,13 @@ class _NotePageState extends ConsumerState<NotePage> {
                 ),
               ],
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: NoteLabelsSection(
+            note: note,
+            isEditable: true,
           ),
         ),
       ],
@@ -294,8 +330,16 @@ class _NotePageState extends ConsumerState<NotePage> {
                   leading: const Icon(Icons.label_outline),
                   title: const Text('Labels'),
                   onTap: () {
-                    // TODO: Implement labels feature
                     Navigator.pop(context);
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.labels,
+                      arguments: {
+                        'noteId': _noteId,
+                        'selectedLabelIds':
+                            ref.read(noteViewProvider(_noteId)).labelIds,
+                      },
+                    );
                   },
                 ),
                 ListTile(

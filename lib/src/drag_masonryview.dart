@@ -62,28 +62,38 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
   Widget buildContainer({
     required Widget Function(List<Widget>) buildItems,
   }) {
-    return DragContainer(
-      isDrag: widget.enableReordering,
-      scrollDirection: widget.scrollViewOptions.scrollDirection,
-      isLongPressDraggable: widget.isLongPressDraggable,
-      buildItems: buildItems,
-      buildFeedback: widget.buildFeedback,
-      axis: widget.axis,
-      dragChildBoxDecoration: widget.dragChildBoxDecoration,
-      dragCallbacks: widget.dragCallbacks,
-      hitTestBehavior: widget.hitTestBehavior,
-      scrollController: widget.scrollController,
-      isDragNotification: widget.isDragNotification,
-      draggingWidgetOpacity: widget.draggingWidgetOpacity,
-      edgeScroll: widget.edgeScroll,
-      edgeScrollSpeedMilliseconds: widget.edgeScrollSpeedMilliseconds,
-      isNotDragList: widget.isNotDragList,
-      items: (DragListItem element, DraggableWidget draggableWidget) {
-        // Return just the widget, no StaggeredGridTile
-        return Container(
-            key: ValueKey(element.key), child: draggableWidget(element.widget));
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return DragContainer(
+          isDrag: widget.enableReordering,
+          scrollDirection: widget.scrollViewOptions.scrollDirection,
+          isLongPressDraggable: widget.isLongPressDraggable,
+          buildItems: buildItems,
+          buildFeedback: widget.buildFeedback,
+          axis: widget.axis,
+          dragChildBoxDecoration: widget.dragChildBoxDecoration,
+          dragCallbacks: widget.dragCallbacks,
+          hitTestBehavior: widget.hitTestBehavior,
+          scrollController: widget.scrollController,
+          isDragNotification: widget.isDragNotification,
+          draggingWidgetOpacity: widget.draggingWidgetOpacity,
+          edgeScroll: widget.edgeScroll,
+          edgeScrollSpeedMilliseconds: widget.edgeScrollSpeedMilliseconds,
+          isNotDragList: widget.isNotDragList,
+          items: (DragListItem element, DraggableWidget draggableWidget) {
+            if (element is DragMasonryItem) {
+              return Container(
+                key: ValueKey(element.key.toString()),
+                child: draggableWidget(element.widget),
+              );
+            } else {
+              throw FlutterError(
+                  'Item should be DragMasonryItem but was ${element.runtimeType}');
+            }
+          },
+          dataList: _children,
+        );
       },
-      dataList: _children,
     );
   }
 
@@ -93,6 +103,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
       child: buildContainer(
         buildItems: (List<Widget> children) {
           return MasonryGridView.count(
+            addRepaintBoundaries: false,
             shrinkWrap: true,
             padding:
                 const EdgeInsets.only(right: 4, left: 4, bottom: 25, top: 12),
@@ -112,7 +123,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
             itemBuilder: (context, index) {
               // Wrap each child in an AnimatedContainer
               return AnimatedContainer(
-                duration: widget.animationDuration,
+                duration: const Duration(milliseconds: 350),
                 child: children[index],
               );
             },
