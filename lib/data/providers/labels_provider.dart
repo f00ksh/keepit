@@ -75,5 +75,9 @@ Label? labelById(ref, String id) {
 @riverpod
 List<Note> notesByLabelId(ref, String labelId) {
   final allNotes = ref.watch(notesProvider);
-  return allNotes.where((note) => note.labelIds.contains(labelId)).toList();
+
+  return allNotes.where((Note note) {
+    final labelIds = note.labelIds;
+    return !note.isDeleted && labelIds.contains(labelId);
+  }).toList();
 }

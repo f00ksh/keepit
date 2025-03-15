@@ -15,6 +15,7 @@ import 'package:keepit/presentation/widgets/sliver_empty_state.dart';
 import 'package:keepit/core/services/navigation_service.dart';
 import 'package:keepit/core/routes/app_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -78,18 +79,21 @@ class _HomePageState extends ConsumerState<HomePage> {
         'Getting notes for index: $index, selectedLabel: $selectedLabel');
 
     if (selectedLabel != null) {
+      // Watch the notes for the selected label
       final labelNotes = ref.watch(notesByLabelIdProvider(selectedLabel));
       debugPrint('Label notes count: ${labelNotes.length}');
       return labelNotes;
     }
 
-    final notes = switch (index) {
+    // Handle regular note lists with explicit type casting
+    final List<Note> notes = switch (index) {
       0 => ref.watch(mainNotesProvider),
       1 => ref.watch(favoriteNotesProvider),
       2 => ref.watch(archivedNotesProvider),
       3 => ref.watch(trashedNotesProvider),
       _ => ref.watch(mainNotesProvider),
     };
+
     debugPrint('Regular notes count for index $index: ${notes.length}');
     return notes;
   }
@@ -105,51 +109,82 @@ class _HomePageState extends ConsumerState<HomePage> {
     final notes = _getNotesForIndex(ref, screenIndex);
     debugPrint('HomePage build - notes count: ${notes.length}');
 
-    final body = Stack(
-      children: [
-        CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            AppSearchBar(
-              isSearchActive: false,
-            ),
-            notes.isEmpty
-                ? SliverEmptyState(
-                    message: _getEmptyMessage(screenIndex),
-                    icon: _getEmptyIcon(screenIndex),
-                  )
-                : _buildGridForIndex(screenIndex, notes),
-          ],
-        ),
+    final body = AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: _isFabExpanded
+            ? Colors.black.withOpacity(0.65)
+            : Colors.transparent,
+      ),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              AppSearchBar(),
+              notes.isEmpty
+                  ? SliverEmptyState(
+                      message: _getEmptyMessage(screenIndex),
+                      icon: _getEmptyIcon(screenIndex),
+                    )
+                  : _buildGridForIndex(screenIndex, notes),
+            ],
+          ),
 
-        // Dimming overlay that appears when FAB is expanded
-        if (_isFabExpanded)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                // Collapse FAB when tapping on the overlay
-                if (_fabKey.currentState != null) {
-                  _fabKey.currentState!.toggle();
-                }
-              },
-              child: AnimatedOpacity(
-                opacity: _isFabExpanded ? 0.5 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                child: Container(
-                  color: Colors.black,
+          // Dimming overlay that appears when FAB is expanded
+          if (_isFabExpanded)
+            Positioned.fill(
+              child: GestureDetector(
+                onVerticalDragStart: (details) {
+                  // Collapse FAB when tapping on the overlay
+                  if (_fabKey.currentState != null) {
+                    _fabKey.currentState!.toggle();
+                  }
+                },
+                onHorizontalDragStart: (details) {
+                  // Collapse FAB when tapping on the overlay
+                  if (_fabKey.currentState != null) {
+                    _fabKey.currentState!.toggle();
+                  }
+                },
+                onTap: () {
+                  // Collapse FAB when tapping on the overlay
+                  if (_fabKey.currentState != null) {
+                    _fabKey.currentState!.toggle();
+                  }
+                },
+                onVerticalDragEnd: (details) {
+                  if (details.primaryVelocity! > 0) {
+                    _fabKey.currentState?.toggle();
+                  }
+                },
+                child: AnimatedOpacity(
+                  opacity: _isFabExpanded ? 0.65 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      extendBody: true,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(.6),
+        backgroundColor: Colors.transparent,
         toolbarHeight: 0,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: _isFabExpanded
+              ? Brightness.light
+              : Theme.of(context).brightness == Brightness.dark
+                  ? Brightness.light
+                  : Brightness.dark,
+        ),
       ),
       drawer: !_showNavigationDrawer
           ? Builder(
@@ -190,15 +225,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           : body,
       floatingActionButton: screenIndex == 0 && selectedLabel == null
           ? ExpandableFab(
-              key: _fabKey, // Add a key to access the FAB state
-              onTextNotePressed: () => _createNote(
-                context,
-                noteType: NoteType.text,
-              ),
-              onTodoNotePressed: () => _createNote(
-                context,
-                noteType: NoteType.todo,
-              ),
+              key: _fabKey,
+              onTextNotePressed: () {
+                _createNote(
+                  context,
+                  noteType: NoteType.text,
+                );
+              },
+              onTodoNotePressed: () {
+                _createNote(
+                  context,
+                  noteType: NoteType.todo,
+                );
+              },
               onToggle: (isExpanded) {
                 setState(() {
                   _isFabExpanded = isExpanded;
@@ -239,8 +278,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     };
   }
 
-  void _createNote(BuildContext context, {required NoteType noteType}) {
-    // Create new note
+  Future<void> _createNote(BuildContext context,
+      {required NoteType noteType}) async {
     final noteId = const Uuid().v4();
     final newNote = Note(
       id: noteId,
@@ -249,18 +288,22 @@ class _HomePageState extends ConsumerState<HomePage> {
       colorIndex: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      noteType: noteType, // Set the note type
+      noteType: noteType,
     );
 
-    ref.read(notesProvider.notifier).addNote(newNote);
     if (!mounted) return;
 
-    // Navigate to note page with note type info
-    Navigator.pushNamed(
+    // Add the note first
+    ref.read(notesProvider.notifier).addNote(newNote);
+
+    // Navigate and wait for the hero animation
+    await Navigator.pushNamed(
       context,
       AppRoutes.addNote,
       arguments: {
         'noteId': noteId,
+        'heroTag':
+            noteType == NoteType.text ? 'text_note_fab' : 'todo_note_fab',
         'initialNoteType': noteType,
       },
     );

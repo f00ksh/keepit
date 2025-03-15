@@ -100,7 +100,10 @@ class AppRouter {
         builder: (context, ref, child) {
           return NotePage(
             noteId: noteId!,
-            heroTag: 'add_note_fab',
+            // hero tag based on note type
+            heroTag:
+                noteType == NoteType.text ? 'text_note_fab' : 'todo_note_fab',
+
             initialNoteType: noteType,
           );
         },

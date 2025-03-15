@@ -30,12 +30,22 @@ class Notes extends _$Notes {
   }
 
   Future<void> addNote(Note note) async {
+    // If it's a todo note, add an initial empty todo
+    final noteToAdd = note.noteType == NoteType.todo
+        ? note.copyWith(todos: [
+            TodoItem(
+              content: '',
+              index: 0,
+            )
+          ])
+        : note;
+
     final currentNotes = List<Note>.from(state);
-    state = [note, ...currentNotes];
+    state = [noteToAdd, ...currentNotes];
 
-    await ref.read(storageServiceProvider).addNote(note);
-
-    _syncWithCloud((service) => service.createNote(note)).catchError(
+    await ref.read(storageServiceProvider).addNote(noteToAdd);
+    ref.invalidateSelf();
+    _syncWithCloud((service) => service.createNote(noteToAdd)).catchError(
         (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
   }
 

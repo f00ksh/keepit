@@ -1,5 +1,4 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 
@@ -57,13 +56,14 @@ List<Note> searchFilteredNotes(ref) {
   final selectedLabels = ref.watch(selectedSearchLabelsProvider);
   final selectedColor = ref.watch(selectedSearchColorProvider);
 
-  // Start with all notes that aren't deleted
-  var filteredNotes = allNotes.where((note) => !note.isDeleted).toList();
+  // Start with non-deleted notes
+  List<Note> filteredNotes =
+      allNotes.where((Note note) => !note.isDeleted).toList();
 
-  // Filter by search query if provided
+  // Filter by search query
   if (query.isNotEmpty) {
     final lowercaseQuery = query.toLowerCase();
-    filteredNotes = filteredNotes.where((note) {
+    filteredNotes = filteredNotes.where((Note note) {
       return note.title.toLowerCase().contains(lowercaseQuery) ||
           note.content.toLowerCase().contains(lowercaseQuery) ||
           note.todos.any(
@@ -71,22 +71,18 @@ List<Note> searchFilteredNotes(ref) {
     }).toList();
   }
 
-  // Filter by selected labels if any
+  // Filter by labels
   if (selectedLabels.isNotEmpty) {
-    filteredNotes = filteredNotes.where((note) {
-      // Make sure labelIds is not null and is a List<String>
-      final labelIds = note.labelIds;
-      if (labelIds == null) return false;
-
-      // Check if note contains all selected labels
-      return selectedLabels.every((labelId) => labelIds.contains(labelId));
+    filteredNotes = filteredNotes.where((Note note) {
+      final noteLabels = note.labelIds;
+      return selectedLabels.every((labelId) => noteLabels.contains(labelId));
     }).toList();
   }
 
-  // Filter by selected color if set
+  // Filter by color
   if (selectedColor != null) {
     filteredNotes = filteredNotes
-        .where((note) => note.colorIndex == selectedColor)
+        .where((Note note) => note.colorIndex == selectedColor)
         .toList();
   }
 

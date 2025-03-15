@@ -66,7 +66,7 @@ class ExpandableFabState extends State<ExpandableFab>
           animation: _controller,
           builder: (context, child) {
             return FloatingActionButton(
-              heroTag: 'add_note_fab',
+              heroTag: 'main_add_fab',
               onPressed: toggle,
               foregroundColor: colorScheme.onSecondaryContainer,
               backgroundColor: colorScheme.secondaryContainer,
@@ -100,6 +100,7 @@ class ExpandableFabState extends State<ExpandableFab>
                   },
                   icon: Icons.text_fields,
                   label: 'Text',
+                  heroTag: 'text_note_fab',
                 ),
               ),
             );
@@ -125,6 +126,7 @@ class ExpandableFabState extends State<ExpandableFab>
                   },
                   icon: Icons.check_box_outlined,
                   label: 'Todos',
+                  heroTag: 'todo_note_fab',
                 ),
               ),
             );
@@ -138,10 +140,11 @@ class ExpandableFabState extends State<ExpandableFab>
     required VoidCallback onPressed,
     required IconData icon,
     required String label,
+    required String heroTag,
   }) {
     return FloatingActionButton.extended(
       shape: StadiumBorder(),
-      heroTag: null, // Prevent hero animation conflicts
+      heroTag: heroTag,
       onPressed: _isExpanded ? onPressed : null,
       elevation: 1,
       foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,

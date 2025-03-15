@@ -31,10 +31,8 @@ class ReorderableGrid extends ConsumerWidget {
           if (oldIndex != newIndex) {
             final updatedNotes = List<Note>.from(notes);
             final item = updatedNotes.removeAt(oldIndex);
-            // Adjust newIndex if moving item forward
-            final adjustedNewIndex =
-                newIndex > oldIndex ? newIndex - 1 : newIndex;
-            updatedNotes.insert(adjustedNewIndex, item);
+
+            updatedNotes.insert(newIndex, item);
 
             // Update indices and persist changes directly
             final notesToUpdate = updatedNotes.asMap().entries.map((entry) {
@@ -73,11 +71,15 @@ class ReorderableGrid extends ConsumerWidget {
             key: ValueKey(note.id),
             widget: NoteCard(
               note: note,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.note,
-                arguments: note.id,
-              ),
+              onTap: () {
+                // Force close any existing snackbars
+                ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.note,
+                  arguments: note.id,
+                );
+              },
             ),
             crossAxisCellCount: 1,
           );

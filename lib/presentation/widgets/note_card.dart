@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:keepit/core/theme/app_theme.dart';
-import 'package:keepit/core/transitions/transition_utils.dart';
-import 'package:keepit/core/utils/error_handler.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
 
@@ -20,7 +18,6 @@ class NoteCard extends StatelessWidget {
     );
 
     final heroTag = 'note_${note.id}';
-    final cardKey = GlobalKey();
 
     return Hero(
         tag: heroTag,
@@ -33,25 +30,7 @@ class NoteCard extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  try {
-                    if (onTap != null) {
-                      onTap!();
-                    } else {
-                      TransitionUtils.navigateToNoteFromCard(
-                        context,
-                        note.id,
-                        'note_${note.id}',
-                        note.noteType,
-                        cardKey,
-                        this,
-                      );
-                    }
-                  } catch (e) {
-                    ErrorHandler.showError(
-                      context,
-                      ErrorHandler.getErrorMessage(e),
-                    );
-                  }
+                  onTap!();
                 },
                 child: noteColor == Theme.of(context).colorScheme.surface
                     ? Card.outlined(

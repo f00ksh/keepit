@@ -28,38 +28,32 @@ class LabelChip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (label == null) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final noteColor = getNoteColor(context, noteColorIndex ?? 0);
-    final blendedColor =
-        Color.alphaBlend(Colors.white.withOpacity(0.2), noteColor!);
+
+    // Adjust blend color and opacity based on theme
+    final blendedColor = isDark
+        ? Color.alphaBlend(Colors.white.withOpacity(0.2), noteColor!)
+        : Color.alphaBlend(Colors.grey.withOpacity(0.2), noteColor!);
+
+    final labelColor = isDark ? Colors.white : Colors.white;
 
     return FilterChip(
-      // Make it smaller
       visualDensity: VisualDensity(horizontal: -4, vertical: -4),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-
-      // Equal padding on all sides for text
       labelPadding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-
-      // Label content
       label: Text(
+        // material 3 style
+        style: Theme.of(context).textTheme.labelMedium,
         label!.name,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-            ),
       ),
-
-      // Selection state
       selected: isSelected,
       onSelected: (selected) {
         if (onTap != null) onTap!();
       },
-
-      // Optional delete button
       onDeleted: removable ? onRemove : null,
-      deleteIcon: const Icon(Icons.close, size: 12, color: Colors.white),
-
-      // Color from app theme
+      deleteIcon: Icon(Icons.close, size: 12, color: labelColor),
       backgroundColor: blendedColor,
       selectedColor: blendedColor,
       shape: RoundedRectangleBorder(

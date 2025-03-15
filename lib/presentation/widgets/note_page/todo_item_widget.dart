@@ -44,10 +44,9 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
       _hasFocus = _focusNode.hasFocus;
     });
 
-    if (!_focusNode.hasFocus) {
-      if (_localContent != widget.todo.content) {
-        widget.onContentChanged(_localContent);
-      }
+    // Always save content when focus is lost
+    if (!_focusNode.hasFocus && _localContent != widget.todo.content) {
+      widget.onContentChanged(_localContent.trim());
     }
   }
 
@@ -63,6 +62,10 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
 
   @override
   void dispose() {
+    // Save content if it has changed before disposing
+    if (_localContent != widget.todo.content) {
+      widget.onContentChanged(_localContent.trim());
+    }
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _controller.dispose();
@@ -147,12 +150,17 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                   ),
                   onChanged: (value) {
                     _localContent = value;
+                    // Save immediately on change
+                    widget.onContentChanged(value.trim());
                   },
                   onSubmitted: (value) {
-                    if (value != widget.todo.content) {
-                      widget.onContentChanged(value);
-                    }
+                    _localContent = value;
+                    widget.onContentChanged(value.trim());
                     _focusNode.requestFocus();
+                  },
+                  // Add editing complete handler
+                  onEditingComplete: () {
+                    widget.onContentChanged(_localContent.trim());
                   },
                 ),
               ),

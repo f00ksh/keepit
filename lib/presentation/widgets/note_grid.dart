@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keepit/data/providers/notes_provider.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/widgets/note_card.dart';
 import 'package:keepit/core/routes/app_router.dart';
-import 'package:keepit/src/drag_callbacks.dart';
-import 'package:keepit/src/drag_gridview.dart';
-import 'package:keepit/src/models.dart';
+
 
 class NoteGrid extends ConsumerWidget {
   final List<Note> notes;
@@ -19,55 +17,31 @@ class NoteGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SliverToBoxAdapter(
-      child: DragGridView(
-        dragCallbacks: DragCallbacks(
-          onAccept: (moveData, data, isFront, {acceptDetails}) {
-            if (moveData == null || acceptDetails == null) return;
-            final oldIndex = acceptDetails.oldIndex;
-            final newIndex = acceptDetails.newIndex;
-
-            if (oldIndex != newIndex) {
-              final updatedNotes = List<Note>.from(notes);
-              final item = updatedNotes.removeAt(oldIndex);
-              // Adjust newIndex if moving item forward
-              final adjustedNewIndex =
-                  newIndex > oldIndex ? newIndex - 1 : newIndex;
-              updatedNotes.insert(adjustedNewIndex, item);
-
-              // Update indices and persist changes directly
-              final notesToUpdate = updatedNotes.asMap().entries.map((entry) {
-                return entry.value.copyWith(
-                  index: entry.key,
-                );
-              }).toList();
-
-              ref.read(notesProvider.notifier).updateBatchNotes(notesToUpdate);
-            }
-          },
-        ),
-        edgeScrollSpeedMilliseconds: 300,
-        edgeScroll: .3,
-        isDragNotification: true,
-        draggingWidgetOpacity: .01,
-        enableReordering: true,
-        crossAxisCount: 2,
-        children: List.generate(notes.length, (index) {
-          final note = notes[index];
-          return DragGridCountItem(
-            crossAxisCellCount: 1,
-            key: ValueKey(note.id),
-            widget: NoteCard(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16.0),
+        child: MasonryGridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          itemCount: notes.length,
+          itemBuilder: (context, index) {
+            final note = notes[index];
+            return NoteCard(
               key: ValueKey(note.id),
               note: note,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.note,
-                arguments: note.id,
-              ),
-            ),
-            mainAxisCellCount: 1,
-          );
-        }),
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.note,
+                  arguments: {
+                    'noteId': note.id,
+                    'heroTag': 'note_${note.id}',
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

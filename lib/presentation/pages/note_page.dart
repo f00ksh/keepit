@@ -6,7 +6,6 @@ import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
-import 'dart:developer' as developer;
 import 'package:keepit/presentation/widgets/note_page/note_todos_section.dart';
 import 'package:keepit/presentation/widgets/note_page/note_bottom_bar.dart';
 
@@ -90,7 +89,6 @@ class _NotePageState extends ConsumerState<NotePage> {
                 onColorPick: () => _showColorPicker(note),
                 onMoreOptions: () => _showMoreOptions(note),
               ),
-              floatingActionButton: _buildFAB(note),
             );
           },
         ),
@@ -159,28 +157,9 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  Widget _buildFAB(Note note) {
-    if (_noteType == NoteType.text || note.todos.isNotEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return FloatingActionButton(
-      heroTag: null,
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      onPressed: () {
-        ref.read(notesProvider.notifier).addTodo(note.id, '');
-        _hasChanges = true;
-      },
-      child: const Icon(Icons.check_box_outlined),
-    );
-  }
-
   AppBar _buildAppBar(Note note) {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: getNoteColor(context, note.colorIndex),
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
@@ -270,13 +249,8 @@ class _NotePageState extends ConsumerState<NotePage> {
     final note = notesNotifier.getNote(widget.noteId);
     if (note == null) return;
 
-    final isEmpty = _titleController.text.trim().isEmpty &&
-        _contentController.text.trim().isEmpty &&
-        note.todos.isEmpty;
-
-    developer.log(
-        'NotePage onPop: Note ${widget.noteId} has ${note.todos.length} todos',
-        name: 'NotePage');
+    // Check if note is empty including the case of single empty todo
+    final isEmpty = _isNoteEmpty(note);
 
     if (_hasChanges) {
       final updatedNote = note.copyWith(
@@ -284,12 +258,8 @@ class _NotePageState extends ConsumerState<NotePage> {
         content: _contentController.text.trim(),
         todos: note.todos,
         updatedAt: DateTime.now(),
-        noteType: _noteType, // Save the current note type
+        noteType: _noteType,
       );
-
-      developer.log(
-          'NotePage saving note: id=${note.id}, todoCount=${note.todos.length}, noteType=$_noteType',
-          name: 'NotePage');
 
       await Future.delayed(const Duration(milliseconds: 150));
       notesNotifier.updateNote(widget.noteId, updatedNote);
@@ -301,6 +271,23 @@ class _NotePageState extends ConsumerState<NotePage> {
       if (!mounted) return;
       await notesNotifier.cleanupEmptyNote(widget.noteId);
     }
+  }
+
+  // Add this helper method to check if note is empty
+  bool _isNoteEmpty(Note note) {
+    final hasNoTitle = _titleController.text.trim().isEmpty;
+    final hasNoContent = _contentController.text.trim().isEmpty;
+
+    // For todo notes, check if there's only one empty todo
+    if (note.noteType == NoteType.todo) {
+      return hasNoTitle &&
+          hasNoContent &&
+          note.todos.length == 1 &&
+          note.todos.first.content.trim().isEmpty;
+    }
+
+    // For text notes
+    return hasNoTitle && hasNoContent && note.todos.isEmpty;
   }
 
   void _showMoreOptions(Note note) {

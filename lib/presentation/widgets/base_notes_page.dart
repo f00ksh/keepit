@@ -58,8 +58,7 @@ class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
           slivers: [
             if (widget.showSearch) // Conditionally show search bar
               AppSearchBar(
-                isSearchActive: false,
-                focusNode: _searchFocusNode,
+           
               ),
             widget.content,
           ],
