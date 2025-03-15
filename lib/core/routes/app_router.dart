@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/presentation/pages/home_page.dart';
 import 'package:keepit/presentation/pages/login_page.dart';
 import 'package:keepit/presentation/pages/note_page.dart';
+import 'package:keepit/presentation/pages/search_page.dart';
 import 'package:keepit/presentation/pages/settings_page.dart';
 import 'package:keepit/presentation/pages/label_screen.dart';
 import 'package:keepit/data/providers/auth_provider.dart';
+import 'package:keepit/domain/models/note.dart';
 
 class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
   static const String settings = '/settings';
-  static const String addNote = '/add-note';
   static const String note = '/note';
   static const String labels = '/labels';
+  static const String search = '/search';
+  static const String addNote = '/add-note';
 }
 
 class AppRouter {
@@ -70,18 +73,68 @@ class AppRouter {
             return guard(context, const SettingsPage());
           },
         ),
-    AppRoutes.addNote: (context) => const NotePage(
-          heroTag: 'add_note_fab',
-        ),
-    AppRoutes.note: (context) {
-      final noteId = ModalRoute.of(context)?.settings.arguments as String?;
+    AppRoutes.addNote: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      String? noteId;
+      NoteType noteType = NoteType.text; // Default to text note
+
+      if (args is String) {
+        // Handle old format for backward compatibility
+        noteId = args;
+      } else if (args is Map<String, dynamic>) {
+        // Handle new format with note type
+        noteId = args['noteId'] as String?;
+        if (args.containsKey('initialNoteType')) {
+          noteType = args['initialNoteType'] as NoteType;
+        } else if (args.containsKey('isTextNote')) {
+          // Legacy support for isTextNote boolean
+          noteType = (args['isTextNote'] as bool?) == true
+              ? NoteType.text
+              : NoteType.todo;
+        }
+      }
+
       if (noteId == null) return const HomePage();
 
       return Consumer(
         builder: (context, ref, child) {
           return NotePage(
-            noteId: noteId,
+            noteId: noteId!,
+            heroTag: 'add_note_fab',
+            initialNoteType: noteType,
+          );
+        },
+      );
+    },
+    AppRoutes.note: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      String? noteId;
+      NoteType? noteType;
+
+      if (args is String) {
+        // Handle old format for backward compatibility
+        noteId = args;
+      } else if (args is Map<String, dynamic>) {
+        // Handle new format with note type
+        noteId = args['noteId'] as String?;
+        if (args.containsKey('initialNoteType')) {
+          noteType = args['initialNoteType'] as NoteType;
+        } else if (args.containsKey('isTextNote')) {
+          // Legacy support for isTextNote boolean
+          noteType = (args['isTextNote'] as bool?) == true
+              ? NoteType.text
+              : NoteType.todo;
+        }
+      }
+
+      if (noteId == null) return const HomePage();
+
+      return Consumer(
+        builder: (context, ref, child) {
+          return NotePage(
+            noteId: noteId!,
             heroTag: 'note_$noteId',
+            initialNoteType: noteType,
           );
         },
       );
@@ -101,17 +154,42 @@ class AppRouter {
         selectedLabelIds: args['selectedLabelIds'] as List<String>,
       );
     },
+    AppRoutes.search: (context) => const SearchPage(),
   };
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    final routeBuilder = routes[settings.name];
-    if (routeBuilder != null) {
-      return MaterialPageRoute(
-        builder: routeBuilder,
-        settings: settings,
-      );
-    }
-    return onUnknownRoute(settings);
+    return switch (settings.name) {
+      AppRoutes.search => PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return const SearchPage();
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return Stack(
+              children: [
+                // Fade in the background
+                FadeTransition(
+                  opacity: animation,
+                  child:
+                      Container(color: Theme.of(context).colorScheme.surface),
+                ),
+                // Scale up the search page content except the AppBar
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
+                ),
+              ],
+            );
+          },
+        ),
+      _ => null,
+    };
   }
 
   static Route<dynamic> onUnknownRoute(RouteSettings settings) {

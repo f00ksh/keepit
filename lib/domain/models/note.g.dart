@@ -29,13 +29,16 @@ class NoteAdapter extends TypeAdapter<Note> {
       isDeleted: fields[9] as bool,
       index: fields[10] as int,
       labelIds: (fields[11] as List).cast<String>(),
+      todos: (fields[12] as List).cast<TodoItem>(),
+      deltaContent: fields[13] as String,
+      noteType: fields[14] as NoteType,
     );
   }
 
   @override
   void write(BinaryWriter writer, Note obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +62,13 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(10)
       ..write(obj.index)
       ..writeByte(11)
-      ..write(obj.labelIds);
+      ..write(obj.labelIds)
+      ..writeByte(12)
+      ..write(obj.todos)
+      ..writeByte(13)
+      ..write(obj.deltaContent)
+      ..writeByte(14)
+      ..write(obj.noteType);
   }
 
   @override
@@ -69,6 +78,45 @@ class NoteAdapter extends TypeAdapter<Note> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is NoteAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class NoteTypeAdapter extends TypeAdapter<NoteType> {
+  @override
+  final int typeId = 6;
+
+  @override
+  NoteType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return NoteType.text;
+      case 1:
+        return NoteType.todo;
+      default:
+        return NoteType.text;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, NoteType obj) {
+    switch (obj) {
+      case NoteType.text:
+        writer.writeByte(0);
+        break;
+      case NoteType.todo:
+        writer.writeByte(1);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NoteTypeAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

@@ -26,25 +26,27 @@ class AppDrawer extends ConsumerWidget {
     final labels = ref.watch(labelsProvider);
     final selectedLabel = ref.watch(selectedLabelProvider);
 
-    // Calculate the correct selectedIndex
-    int selectedIndex;
+    // Calculate selected index
+    int selectedIndex = currentIndex;
     if (selectedLabel != null) {
-      // If a label is selected, adjust index to account for header items
-      selectedIndex = labels.indexWhere((l) => l.id == selectedLabel) + 2;
-    } else if (currentIndex < 2) {
-      // Notes and Favorites
-      selectedIndex = currentIndex;
-    } else {
-      // Archive, Trash, Settings - add offset for labels
+      // Find the label index and add offset for base items
+      final labelIndex = labels.indexWhere((l) => l.id == selectedLabel);
+      if (labelIndex != -1) {
+        selectedIndex = labelIndex + 2; // +2 for Notes and Favorites
+      }
+    } else if (currentIndex >= 2) {
+      // Adjust index for Archive, Trash, Settings
       selectedIndex =
-          currentIndex + labels.length + 1; // +1 for "Create new label" button
+          currentIndex + labels.length + 1; // +1 for "Create new label"
     }
+
+    debugPrint(
+        'AppDrawer selectedIndex: $selectedIndex, currentIndex: $currentIndex, selectedLabel: $selectedLabel');
 
     return NavigationDrawer(
       selectedIndex: selectedIndex,
       onDestinationSelected: (index) {
         debugPrint('AppDrawer: Destination selected: $index');
-
         final totalBaseItems = 2; // Notes and Favorites
         final labelsCount = labels.length;
 
@@ -57,8 +59,7 @@ class AppDrawer extends ConsumerWidget {
             index,
             onIndexChanged: onDestinationSelected,
           );
-        } else if (index >= totalBaseItems &&
-            index < totalBaseItems + labelsCount) {
+        } else if (index < totalBaseItems + labelsCount) {
           // Labels
           final labelIndex = index - totalBaseItems;
           debugPrint('AppDrawer: Selecting label at index: $labelIndex');
@@ -80,11 +81,10 @@ class AppDrawer extends ConsumerWidget {
             labelData: {'isCreateNew': true},
           );
         } else {
-          final adjustedIndex = index - (totalBaseItems + labelsCount + 1);
-          final finalIndex = adjustedIndex + totalBaseItems;
-
-          debugPrint(
-              'AppDrawer: Selecting remaining item. Adjusted index: $finalIndex');
+          // Archive, Trash, Settings
+          final remainingIndex = index - (totalBaseItems + labelsCount + 1);
+          final finalIndex = remainingIndex + totalBaseItems;
+          debugPrint('AppDrawer: Selecting remaining item: $finalIndex');
           NavigationService.handleDestinationChange(
             context,
             ref,

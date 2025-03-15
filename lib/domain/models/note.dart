@@ -1,7 +1,19 @@
 import 'package:hive/hive.dart';
 import 'package:keepit/core/constants/app_constants.dart';
+import 'package:keepit/domain/models/todo_item.dart';
+import 'dart:developer' as developer;
 
 part 'note.g.dart';
+
+// Define NoteType enum
+@HiveType(typeId: 6)
+enum NoteType {
+  @HiveField(0)
+  text,
+
+  @HiveField(1)
+  todo
+}
 
 @HiveType(typeId: 0)
 class Note {
@@ -41,6 +53,15 @@ class Note {
   @HiveField(11)
   final List<String> labelIds;
 
+  @HiveField(12)
+  final List<TodoItem> todos;
+
+  @HiveField(13)
+  final String deltaContent;
+
+  @HiveField(14)
+  final NoteType noteType;
+
   Note({
     required this.id,
     required this.title,
@@ -54,6 +75,9 @@ class Note {
     this.isDeleted = false,
     this.index = 0,
     this.labelIds = const [],
+    this.todos = const [],
+    this.deltaContent = '',
+    this.noteType = NoteType.text,
   });
 
   Note copyWith({
@@ -69,7 +93,16 @@ class Note {
     bool? isDeleted,
     int? index,
     List<String>? labelIds,
+    List<TodoItem>? todos,
+    String? deltaContent,
+    NoteType? noteType,
   }) {
+    // Debug log for todos
+    if (todos != null) {
+      developer.log('Note.copyWith: Updating todos - count=${todos.length}',
+          name: 'Note');
+    }
+
     return Note(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -83,10 +116,18 @@ class Note {
       isDeleted: isDeleted ?? this.isDeleted,
       index: index ?? this.index,
       labelIds: labelIds ?? this.labelIds,
+      todos: todos ?? this.todos,
+      deltaContent: deltaContent ?? this.deltaContent,
+      noteType: noteType ?? this.noteType,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final todoJsonList = todos.map((todo) => todo.toJson()).toList();
+    developer.log(
+        'Note.toJson: todoCount=${todos.length}, todoJsons=$todoJsonList',
+        name: 'Note');
+
     return {
       'id': id,
       'title': title,
@@ -100,10 +141,31 @@ class Note {
       'is_deleted': isDeleted,
       'index': index,
       'label_ids': labelIds,
+      'todos': todoJsonList,
+      'delta_content': deltaContent,
+      'note_type': noteType.index, // Store as integer
     };
   }
 
   factory Note.fromJson(Map<String, dynamic> json) {
+    // Determine note type from json or infer based on content if not available
+    NoteType type = NoteType.text;
+    if (json.containsKey('note_type')) {
+      // If the note_type is present in the JSON, use it
+      type = NoteType.values[json['note_type'] as int];
+    } else {
+      // Otherwise infer from content/todos
+      final todos = (json['todos'] as List?)
+              ?.map((e) => TodoItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      final content = json['content'] as String? ?? '';
+      type = (todos.isEmpty || (content.isNotEmpty && todos.isEmpty))
+          ? NoteType.text
+          : NoteType.todo;
+    }
+
     return Note(
       id: json['id'],
       title: json['title'],
@@ -117,6 +179,12 @@ class Note {
       isDeleted: json['is_deleted'] ?? false,
       index: json['index'] ?? 0,
       labelIds: (json['label_ids'] as List?)?.cast<String>() ?? [],
+      todos: (json['todos'] as List?)
+              ?.map((e) => TodoItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      deltaContent: json['delta_content'] ?? '',
+      noteType: type,
     );
   }
 }

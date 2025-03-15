@@ -2,21 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/core/theme/app_theme.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
-import 'package:keepit/presentation/providers/note_view_provider.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
-import 'package:keepit/presentation/widgets/note_hero.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
-import 'package:uuid/uuid.dart';
+import 'dart:developer' as developer;
+import 'package:keepit/presentation/widgets/note_page/note_todos_section.dart';
+import 'package:keepit/presentation/widgets/note_page/note_bottom_bar.dart';
 
 class NotePage extends ConsumerStatefulWidget {
-  final String? noteId; // null means new note
-  final String heroTag; // Add this parameter
+  final String noteId;
+  final String heroTag;
+  final NoteType? initialNoteType;
 
   const NotePage({
     super.key,
-    this.noteId,
-    required this.heroTag, // Required for both new and existing notes
+    required this.noteId,
+    required this.heroTag,
+    this.initialNoteType,
   });
 
   @override
@@ -24,24 +27,32 @@ class NotePage extends ConsumerStatefulWidget {
 }
 
 class _NotePageState extends ConsumerState<NotePage> {
-  late String _noteId;
   late TextEditingController _titleController;
   late TextEditingController _contentController;
-  late String _heroTag; // Add hero tag state variable that can be updated
+
+  late String _heroTag;
+  bool _hasChanges = false;
+  late NoteType _noteType;
 
   @override
   void initState() {
     super.initState();
-    _noteId = widget.noteId ?? const Uuid().v4();
     _titleController = TextEditingController();
     _contentController = TextEditingController();
-    _heroTag = widget.heroTag; // Initialize with the provided hero tag
+    _noteType = widget.initialNoteType ?? NoteType.text;
+    _heroTag = widget.heroTag;
 
-    // Initialize controllers after the first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final note = ref.read(noteViewProvider(_noteId));
-      _titleController.text = note.title;
-      _contentController.text = note.content;
+      final note = ref.read(notesProvider.notifier).getNote(widget.noteId);
+      if (note != null) {
+        _titleController.text = note.title;
+        _contentController.text = note.content;
+
+        // Use the note type from the model
+        setState(() {
+          _noteType = note.noteType;
+        });
+      }
     });
   }
 
@@ -49,51 +60,37 @@ class _NotePageState extends ConsumerState<NotePage> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final note = ref.watch(noteViewProvider(_noteId));
+    ref.watch(notesProvider);
+    final note = ref.read(notesProvider.notifier).getNote(widget.noteId);
+    if (note == null) {
+      return const Scaffold(
+        body: Center(child: Text('Note not found')),
+      );
+    }
 
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) async {
-        // Save note if it has content
-        if (note.title.isNotEmpty || note.content.isNotEmpty) {
-          // If this is a new note (using the temporary hero tag), update the hero tag to match the note's ID
-          if (widget.noteId == null && _heroTag == widget.heroTag) {
-            setState(() {
-              _heroTag = 'note_$_noteId'; // Use the same format as note cards
-            });
-          }
-          await ref.read(noteViewProvider(_noteId).notifier).saveNote();
-        }
-      },
-      child: NoteHeroWidget(
-        tag: _heroTag, // Use the updatable hero tag
+      onPopInvokedWithResult: _handlePop,
+      child: Hero(
+        tag: _heroTag,
         child: Builder(
           builder: (context) {
-            // Save the note after the hero animation completes
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (note.title.isNotEmpty || note.content.isNotEmpty) {
-                ref.read(noteViewProvider(_noteId).notifier).saveNote();
-
-                // If this is a new note, update the hero tag after saving
-                if (widget.noteId == null && _heroTag == widget.heroTag) {
-                  setState(() {
-                    _heroTag =
-                        'note_$_noteId'; // Update to match note card format
-                  });
-                }
-              }
-            });
-
+            _updateHeroTag();
             return Scaffold(
               backgroundColor: getNoteColor(context, note.colorIndex),
               appBar: _buildAppBar(note),
-              body: _buildContent(note),
-              bottomNavigationBar: _buildEditInfo(note),
-              bottomSheet: null,
+              body: _buildBody(note),
+              bottomNavigationBar: NoteBottomBar(
+                note: note,
+                onColorPick: () => _showColorPicker(note),
+                onMoreOptions: () => _showMoreOptions(note),
+              ),
+              floatingActionButton: _buildFAB(note),
             );
           },
         ),
@@ -101,103 +98,23 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  AppBar _buildAppBar(Note note) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-          onPressed: () => _updateNote(note, isPinned: !note.isPinned),
-        ),
-        IconButton(
-          icon: Icon(note.isFavorite ? Icons.favorite : Icons.favorite_border),
-          onPressed: () => _updateNote(note, isFavorite: !note.isFavorite),
-        ),
-        // Show reminder button for non-deleted notes
-        if (!note.isDeleted) ...[
-          IconButton(
-            icon: const Icon(Icons.notification_add_outlined),
-            onPressed: () {
-              // TODO: Implement reminder feature
-            },
-          ),
-        ],
-        // Show delete button only in trash
-        if (note.isDeleted) ...[
-          IconButton(
-            icon: const Icon(Icons.delete_forever),
-            onPressed: () {
-              // TODO: Implement permanent delete
-              Navigator.pop(context);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.restore),
-            onPressed: () {
-              _updateNote(note, isDeleted: false);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-        // Show unarchive button only in archive
-        if (note.isArchived && !note.isDeleted) ...[
-          IconButton(
-            icon: const Icon(Icons.unarchive),
-            onPressed: () {
-              _updateNote(note, isArchived: false);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildContent(Note note) {
+  Widget _buildBody(Note note) {
     return Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    hintText: 'Title',
-                    border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                _buildTitleField(),
+                if (_noteType == NoteType.text ||
+                    (note.content.isNotEmpty && note.todos.isEmpty))
+                  _buildContentField(),
+                if (_noteType == NoteType.todo || note.todos.isNotEmpty)
+                  NoteTodosSection(
+                    note: note,
+                    onChanged: () => _hasChanges = true,
                   ),
-                  style: Theme.of(context).textTheme.titleLarge,
-                  onChanged: (value) {
-                    ref
-                        .read(noteViewProvider(_noteId).notifier)
-                        .updateTitle(value);
-                  },
-                ),
-                TextField(
-                  controller: _contentController,
-                  decoration: const InputDecoration(
-                    hintText: 'Start writing...',
-                    border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (value) {
-                    ref
-                        .read(noteViewProvider(_noteId).notifier)
-                        .updateContent(value);
-                  },
-                ),
               ],
             ),
           ),
@@ -213,26 +130,110 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  Widget _buildEditInfo(Note note) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.color_lens_outlined),
-            onPressed: () => _showColorPicker(note),
-          ),
-          Text(
-            'Edited ${_formatEditedDate(note.updatedAt)}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () => _showMoreOptions(note),
-          ),
-        ],
+  Widget _buildTitleField() {
+    return TextField(
+      controller: _titleController,
+      decoration: const InputDecoration(
+        hintText: 'Title',
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
+      style: Theme.of(context).textTheme.titleLarge,
+      onChanged: (_) => _hasChanges = true,
+    );
+  }
+
+  Widget _buildContentField() {
+    return TextField(
+      controller: _contentController,
+      decoration: const InputDecoration(
+        hintText: 'Start writing...',
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      style: Theme.of(context).textTheme.bodyLarge,
+      maxLines: null,
+      keyboardType: TextInputType.multiline,
+      textCapitalization: TextCapitalization.sentences,
+      onChanged: (_) => _hasChanges = true,
+    );
+  }
+
+  Widget _buildFAB(Note note) {
+    if (_noteType == NoteType.text || note.todos.isNotEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return FloatingActionButton(
+      heroTag: null,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      onPressed: () {
+        ref.read(notesProvider.notifier).addTodo(note.id, '');
+        _hasChanges = true;
+      },
+      child: const Icon(Icons.check_box_outlined),
+    );
+  }
+
+  AppBar _buildAppBar(Note note) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        Wrap(
+          spacing: 4,
+          children: [
+            IconButton(
+              icon: Icon(
+                  note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+              onPressed: () => _updateNote(note, isPinned: !note.isPinned),
+            ),
+            IconButton(
+              icon: Icon(
+                  note.isFavorite ? Icons.favorite : Icons.favorite_border),
+              onPressed: () => _updateNote(note, isFavorite: !note.isFavorite),
+            ),
+            if (!note.isDeleted)
+              IconButton(
+                icon: const Icon(Icons.notification_add_outlined),
+                onPressed: () {
+                  // TODO: Implement reminder feature
+                },
+              ),
+            if (note.isDeleted) ...[
+              IconButton(
+                icon: const Icon(Icons.delete_forever),
+                onPressed: () {
+                  // TODO: Implement permanent delete
+                  Navigator.pop(context);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.restore),
+                onPressed: () {
+                  _updateNote(note, isDeleted: false);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+            if (note.isArchived && !note.isDeleted)
+              IconButton(
+                icon: const Icon(Icons.unarchive),
+                onPressed: () {
+                  _updateNote(note, isArchived: false);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -243,25 +244,62 @@ class _NotePageState extends ConsumerState<NotePage> {
     bool? isArchived,
     bool? isDeleted,
   }) {
-    final notifier = ref.read(noteViewProvider(_noteId).notifier);
-    if (isPinned != null) notifier.togglePin();
-    if (isFavorite != null) notifier.toggleFavorite();
-    if (isArchived != null) notifier.toggleArchive();
-    if (isDeleted != null) notifier.moveToTrash();
+    ref.read(notesProvider.notifier).updateNoteStatus(
+          note.id,
+          isPinned: isPinned,
+          isFavorite: isFavorite,
+          isArchived: isArchived,
+          isDeleted: isDeleted,
+        );
   }
 
-  String _formatEditedDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
+  void _updateHeroTag() {
+    if (_heroTag == widget.heroTag) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _heroTag = 'note_${widget.noteId}';
+        });
+      });
+    }
+  }
 
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
+  Future<void> _handlePop(bool didPop, dynamic result) async {
+    if (!mounted) return;
+
+    final notesNotifier = ref.read(notesProvider.notifier);
+    final note = notesNotifier.getNote(widget.noteId);
+    if (note == null) return;
+
+    final isEmpty = _titleController.text.trim().isEmpty &&
+        _contentController.text.trim().isEmpty &&
+        note.todos.isEmpty;
+
+    developer.log(
+        'NotePage onPop: Note ${widget.noteId} has ${note.todos.length} todos',
+        name: 'NotePage');
+
+    if (_hasChanges) {
+      final updatedNote = note.copyWith(
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        todos: note.todos,
+        updatedAt: DateTime.now(),
+        noteType: _noteType, // Save the current note type
+      );
+
+      developer.log(
+          'NotePage saving note: id=${note.id}, todoCount=${note.todos.length}, noteType=$_noteType',
+          name: 'NotePage');
+
+      await Future.delayed(const Duration(milliseconds: 150));
+      notesNotifier.updateNote(widget.noteId, updatedNote);
+      _hasChanges = false;
+    }
+
+    if (isEmpty) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await notesNotifier.cleanupEmptyNote(widget.noteId);
     }
   }
 
@@ -273,12 +311,21 @@ class _NotePageState extends ConsumerState<NotePage> {
       enableDrag: true,
       builder: (context) => Consumer(
         builder: (context, ref, _) {
+          ref.watch(notesProvider);
+          final currentNote =
+              ref.read(notesProvider.notifier).getNote(widget.noteId);
+
+          if (currentNote == null) {
+            Navigator.pop(context);
+            return const SizedBox.shrink();
+          }
+
           final colorScheme = Theme.of(context).colorScheme;
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final handleColor = isDark
               ? colorScheme.onSurface.withOpacity(0.4)
               : colorScheme.onSurfaceVariant.withOpacity(0.4);
-          final noteColor = getNoteColor(context, note.colorIndex);
+          final noteColor = getNoteColor(context, currentNote.colorIndex);
 
           return Container(
             decoration: BoxDecoration(
@@ -303,29 +350,52 @@ class _NotePageState extends ConsumerState<NotePage> {
                     ),
                   ),
                 ),
-                // Show archive/delete only for normal notes
-                if (!note.isDeleted && !note.isArchived) ...[
+                if (!currentNote.isDeleted && !currentNote.isArchived) ...[
                   ListTile(
                     leading: const Icon(Icons.archive_outlined),
                     title: const Text('Archive'),
                     onTap: () {
-                      _updateNote(note, isArchived: true);
+                      _updateNote(currentNote, isArchived: true);
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.delete_outline),
                     title: const Text('Delete'),
-                    onTap: () {
-                      ref
-                          .read(noteViewProvider(_noteId).notifier)
-                          .moveToTrash();
+                    onTap: () async {
+                      ScaffoldMessenger.of(context).clearSnackBars();
+
+                      final messenger = ScaffoldMessenger.of(context);
+                      final notesNotifier = ref.read(notesProvider.notifier);
+
                       Navigator.pop(context);
                       Navigator.pop(context);
+
+                      await Future.delayed(const Duration(milliseconds: 300));
+
+                      await notesNotifier.updateNoteStatus(
+                        currentNote.id,
+                        isDeleted: true,
+                      );
+
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: const Text('Note moved to trash'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () async {
+                              await notesNotifier.updateNoteStatus(
+                                currentNote.id,
+                                isDeleted: false,
+                              );
+                              messenger.clearSnackBars();
+                            },
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ],
-                // Common options for all notes
                 ListTile(
                   leading: const Icon(Icons.label_outline),
                   title: const Text('Labels'),
@@ -335,9 +405,8 @@ class _NotePageState extends ConsumerState<NotePage> {
                       context,
                       AppRoutes.labels,
                       arguments: {
-                        'noteId': _noteId,
-                        'selectedLabelIds':
-                            ref.read(noteViewProvider(_noteId)).labelIds,
+                        'noteId': widget.noteId,
+                        'selectedLabelIds': currentNote.labelIds,
                       },
                     );
                   },
@@ -346,7 +415,6 @@ class _NotePageState extends ConsumerState<NotePage> {
                   leading: const Icon(Icons.send_outlined),
                   title: const Text('Send'),
                   onTap: () {
-                    // TODO: Implement send feature
                     Navigator.pop(context);
                   },
                 ),
@@ -367,7 +435,15 @@ class _NotePageState extends ConsumerState<NotePage> {
       enableDrag: true,
       builder: (context) => Consumer(
         builder: (context, ref, _) {
-          final currentNote = ref.watch(noteViewProvider(_noteId));
+          ref.watch(notesProvider);
+          final currentNote =
+              ref.read(notesProvider.notifier).getNote(widget.noteId);
+
+          if (currentNote == null) {
+            Navigator.pop(context);
+            return const SizedBox.shrink();
+          }
+
           final noteColor = getNoteColor(context, currentNote.colorIndex);
           final colorScheme = Theme.of(context).colorScheme;
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -399,7 +475,7 @@ class _NotePageState extends ConsumerState<NotePage> {
                   ),
                 ),
                 ColorPickerContent(
-                  noteId: _noteId,
+                  noteId: widget.noteId,
                   initialColorIndex: currentNote.colorIndex,
                 ),
                 SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),

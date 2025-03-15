@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:keepit/core/theme/app_theme.dart';
+import 'package:keepit/core/transitions/transition_utils.dart';
 import 'package:keepit/core/utils/error_handler.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
-import 'package:keepit/presentation/widgets/note_hero.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -16,12 +16,13 @@ class NoteCard extends StatelessWidget {
     final noteColor = getNoteColor(context, note.colorIndex);
     final cardContent = Padding(
       padding: const EdgeInsets.all(12),
-      child: _buildNoteContent(),
+      child: _buildNoteContent(context),
     );
 
     final heroTag = 'note_${note.id}';
+    final cardKey = GlobalKey();
 
-    return NoteHeroWidget(
+    return Hero(
         tag: heroTag,
         child: Material(
           color: Colors.transparent,
@@ -33,7 +34,18 @@ class NoteCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   try {
-                    onTap?.call();
+                    if (onTap != null) {
+                      onTap!();
+                    } else {
+                      TransitionUtils.navigateToNoteFromCard(
+                        context,
+                        note.id,
+                        'note_${note.id}',
+                        note.noteType,
+                        cardKey,
+                        this,
+                      );
+                    }
                   } catch (e) {
                     ErrorHandler.showError(
                       context,
@@ -54,9 +66,9 @@ class NoteCard extends StatelessWidget {
                               Padding(
                                 padding: const EdgeInsets.only(
                                   top: 8.0,
-                                  left: 10,
+                                  left: 12,
                                   right: 10,
-                                  bottom: 10,
+                                  bottom: 15,
                                 ),
                                 child: NoteLabelsSection(note: note),
                               ),
@@ -95,7 +107,12 @@ class NoteCard extends StatelessWidget {
   }
 
   /// Builds the note content (title and body).
-  Widget _buildNoteContent() {
+  Widget _buildNoteContent(BuildContext context) {
+    // If note is completely empty (no title, content, or todos)
+    if (note.title.isEmpty && note.content.isEmpty && note.todos.isEmpty) {
+      return const SizedBox(height: 25);
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +126,8 @@ class NoteCard extends StatelessWidget {
             ),
             maxLines: note.content.isNotEmpty ? 1 : 3,
           ),
-        if (note.content.isNotEmpty)
+        if (note.content.isNotEmpty &&
+            (note.noteType == NoteType.text || note.todos.isEmpty))
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: AutoSizeText(
@@ -121,6 +139,45 @@ class NoteCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+        // Add static todos section
+        if (note.todos.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+          ),
+          ...note.todos.take(2).map((todo) => Row(
+                children: [
+                  Icon(
+                    todo.isDone
+                        ? Icons.check_box
+                        : Icons.check_box_outline_blank,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      todo.content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        decoration:
+                            todo.isDone ? TextDecoration.lineThrough : null,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              )),
+          if (note.todos.length > 2)
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: Text(
+                '${note.todos.where((todo) => todo.isDone).length}/${note.todos.length} tasks',
+                style: const TextStyle(
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }

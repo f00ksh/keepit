@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/theme/app_theme.dart';
-import 'package:keepit/presentation/providers/note_view_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 
 class ColorPickerContent extends ConsumerWidget {
   final String noteId;
@@ -42,9 +42,13 @@ class ColorPickerContent extends ConsumerWidget {
                 isSelected: index == noteColor,
                 onTap: () {
                   debugPrint('Tapped no color option, index: $index');
-                  ref
-                      .read(noteViewProvider(noteId).notifier)
-                      .updateColorIndex(index);
+                  final note = ref.read(notesProvider).firstWhere(
+                        (note) => note.id == noteId,
+                      );
+                  ref.read(notesProvider.notifier).updateNote(
+                        noteId,
+                        note.copyWith(colorIndex: index),
+                      );
                 },
                 isNoColor: true,
               );
@@ -55,9 +59,13 @@ class ColorPickerContent extends ConsumerWidget {
               isSelected: index == noteColor,
               onTap: () {
                 debugPrint('Tapped color option, index: $index');
-                ref
-                    .read(noteViewProvider(noteId).notifier)
-                    .updateColorIndex(index);
+                final note = ref.read(notesProvider).firstWhere(
+                      (note) => note.id == noteId,
+                    );
+                ref.read(notesProvider.notifier).updateNote(
+                      noteId,
+                      note.copyWith(colorIndex: index),
+                    );
               },
             );
           },

@@ -23,16 +23,16 @@ class NavigationService {
       } else if (labelData['labelId'] != null) {
         debugPrint(
             'NavigationService: Filtering by label: ${labelData['labelId']}');
-        // Set selected label and navigate to main view with filter
+        // Set selected label
         ref
             .read(selectedLabelProvider.notifier)
             .setSelectedLabel(labelData['labelId']);
-        onIndexChanged?.call(-1); // Use -1 to indicate label filter view
 
         // Close drawer if open
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
+        return;
       }
       return;
     }
@@ -40,7 +40,7 @@ class NavigationService {
     // Clear selected label for non-label navigation
     ref.read(selectedLabelProvider.notifier).setSelectedLabel(null);
 
-    // Handle regular navigation (Notes, Favorites, Archive, Trash, Settings)
+    // Handle regular navigation
     debugPrint('NavigationService: Regular navigation to index $index');
     if (index == 4) {
       Navigator.pushNamed(context, AppRoutes.settings);

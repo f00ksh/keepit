@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/labels_provider.dart';
+import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
 import 'package:keepit/presentation/providers/selected_label_provider.dart';
 import 'package:keepit/presentation/widgets/app_drawer.dart';
+import 'package:keepit/presentation/widgets/expandable_fab.dart';
 import 'package:keepit/presentation/widgets/note_grid.dart';
 import 'package:keepit/presentation/widgets/reorderable_grid.dart';
 import 'package:keepit/presentation/widgets/search_bar.dart';
 import 'package:keepit/presentation/widgets/sliver_empty_state.dart';
 import 'package:keepit/core/services/navigation_service.dart';
 import 'package:keepit/core/routes/app_router.dart';
+import 'package:uuid/uuid.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -29,6 +32,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   final FocusNode _searchFocusNode = FocusNode();
   late bool _showNavigationDrawer;
   late final ScrollController _scrollController;
+  bool _isFabExpanded = false; // Track FAB expansion state
 
   @override
   void didChangeDependencies() {
@@ -49,69 +53,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final screenIndex = ref.watch(navigationProvider);
-    final selectedLabel = ref.watch(selectedLabelProvider);
-    debugPrint(
-        'HomePage build - screenIndex: $screenIndex, selectedLabel: $selectedLabel');
-
-    final notes = _getNotesForIndex(ref, screenIndex);
-    debugPrint('HomePage build - notes count: ${notes.length}');
-
-    return Scaffold(
-      drawer: !_showNavigationDrawer
-          ? Builder(
-              builder: (BuildContext drawerContext) => AppDrawer(
-                currentIndex: screenIndex,
-                onDestinationSelected: (index) {
-                  if (!mounted) return;
-                  NavigationService.handleDestinationChange(
-                    drawerContext,
-                    ref,
-                    index,
-                    onIndexChanged: (index) =>
-                        ref.read(navigationProvider.notifier).setIndex(index),
-                  );
-                },
-              ),
-            )
-          : null,
-      body: GestureDetector(
-        onTap: () => _searchFocusNode.unfocus(),
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            AppSearchBar(
-              isSearchActive: false,
-              focusNode: _searchFocusNode,
-            ),
-            notes.isEmpty
-                ? SliverEmptyState(
-                    message: _getEmptyMessage(screenIndex),
-                    icon: _getEmptyIcon(screenIndex),
-                  )
-                : _buildGridForIndex(screenIndex, notes),
-          ],
-        ),
-      ),
-      floatingActionButton: screenIndex == 0
-          ? FloatingActionButton.extended(
-              heroTag: 'add_note_fab',
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.addNote),
-              label: const Text('Add Note'),
-              icon: const Icon(Icons.add),
-            )
-          : null,
-    );
-  }
-
   Widget _buildGridForIndex(int index, List<Note> notes) {
     final selectedLabel = ref.watch(selectedLabelProvider);
     debugPrint(
         'Building grid for index: $index, selectedLabel: $selectedLabel');
     debugPrint('Notes count: ${notes.length}');
 
+    // Always use NoteGrid for label filtered view
+    if (selectedLabel != null) {
+      debugPrint('Using NoteGrid for label view');
+      return NoteGrid(notes: notes);
+    }
+
+    // For main views
     return switch (index) {
       0 => ReorderableGrid(),
       _ => NoteGrid(notes: notes),
@@ -134,10 +88,125 @@ class _HomePageState extends ConsumerState<HomePage> {
       1 => ref.watch(favoriteNotesProvider),
       2 => ref.watch(archivedNotesProvider),
       3 => ref.watch(trashedNotesProvider),
-      _ => const <Note>[],
+      _ => ref.watch(mainNotesProvider),
     };
     debugPrint('Regular notes count for index $index: ${notes.length}');
     return notes;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenIndex = ref.watch(navigationProvider);
+    final selectedLabel = ref.watch(selectedLabelProvider);
+
+    debugPrint(
+        'HomePage build - screenIndex: $screenIndex, selectedLabel: $selectedLabel');
+
+    final notes = _getNotesForIndex(ref, screenIndex);
+    debugPrint('HomePage build - notes count: ${notes.length}');
+
+    final body = Stack(
+      children: [
+        CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            AppSearchBar(
+              isSearchActive: false,
+            ),
+            notes.isEmpty
+                ? SliverEmptyState(
+                    message: _getEmptyMessage(screenIndex),
+                    icon: _getEmptyIcon(screenIndex),
+                  )
+                : _buildGridForIndex(screenIndex, notes),
+          ],
+        ),
+
+        // Dimming overlay that appears when FAB is expanded
+        if (_isFabExpanded)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                // Collapse FAB when tapping on the overlay
+                if (_fabKey.currentState != null) {
+                  _fabKey.currentState!.toggle();
+                }
+              },
+              child: AnimatedOpacity(
+                opacity: _isFabExpanded ? 0.5 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(.6),
+        toolbarHeight: 0,
+      ),
+      drawer: !_showNavigationDrawer
+          ? Builder(
+              builder: (BuildContext drawerContext) => AppDrawer(
+                currentIndex: screenIndex,
+                onDestinationSelected: (index) {
+                  if (!mounted) return;
+                  NavigationService.handleDestinationChange(
+                    drawerContext,
+                    ref,
+                    index,
+                    onIndexChanged: (index) =>
+                        ref.read(navigationProvider.notifier).setIndex(index),
+                  );
+                },
+              ),
+            )
+          : null,
+      body: _showNavigationDrawer
+          ? Row(
+              children: [
+                AppDrawer(
+                  currentIndex: screenIndex,
+                  onDestinationSelected: (index) {
+                    if (!mounted) return;
+                    NavigationService.handleDestinationChange(
+                      context,
+                      ref,
+                      index,
+                      onIndexChanged: (index) =>
+                          ref.read(navigationProvider.notifier).setIndex(index),
+                    );
+                  },
+                ),
+                Expanded(child: body),
+              ],
+            )
+          : body,
+      floatingActionButton: screenIndex == 0 && selectedLabel == null
+          ? ExpandableFab(
+              key: _fabKey, // Add a key to access the FAB state
+              onTextNotePressed: () => _createNote(
+                context,
+                noteType: NoteType.text,
+              ),
+              onTodoNotePressed: () => _createNote(
+                context,
+                noteType: NoteType.todo,
+              ),
+              onToggle: (isExpanded) {
+                setState(() {
+                  _isFabExpanded = isExpanded;
+                });
+              },
+            )
+          : null,
+    );
   }
 
   String _getEmptyMessage(int index) {
@@ -169,4 +238,34 @@ class _HomePageState extends ConsumerState<HomePage> {
       _ => Icons.note_outlined,
     };
   }
+
+  void _createNote(BuildContext context, {required NoteType noteType}) {
+    // Create new note
+    final noteId = const Uuid().v4();
+    final newNote = Note(
+      id: noteId,
+      title: '',
+      content: '',
+      colorIndex: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      noteType: noteType, // Set the note type
+    );
+
+    ref.read(notesProvider.notifier).addNote(newNote);
+    if (!mounted) return;
+
+    // Navigate to note page with note type info
+    Navigator.pushNamed(
+      context,
+      AppRoutes.addNote,
+      arguments: {
+        'noteId': noteId,
+        'initialNoteType': noteType,
+      },
+    );
+  }
+
+  // Create a global key to access the FAB state
+  final GlobalKey<ExpandableFabState> _fabKey = GlobalKey<ExpandableFabState>();
 }
