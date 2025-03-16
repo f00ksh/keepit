@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/labels_provider.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
+import 'package:keepit/presentation/providers/fab_provider.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
 import 'package:keepit/presentation/providers/selected_label_provider.dart';
@@ -33,7 +34,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   final FocusNode _searchFocusNode = FocusNode();
   late bool _showNavigationDrawer;
   late final ScrollController _scrollController;
-  bool _isFabExpanded = false; // Track FAB expansion state
+  final GlobalKey<ExpandableFabState> _fabKey = GlobalKey<ExpandableFabState>();
 
   @override
   void didChangeDependencies() {
@@ -56,13 +57,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildGridForIndex(int index, List<Note> notes) {
     final selectedLabel = ref.watch(selectedLabelProvider);
-    debugPrint(
-        'Building grid for index: $index, selectedLabel: $selectedLabel');
-    debugPrint('Notes count: ${notes.length}');
-
     // Always use NoteGrid for label filtered view
     if (selectedLabel != null) {
-      debugPrint('Using NoteGrid for label view');
       return NoteGrid(notes: notes);
     }
 
@@ -75,13 +71,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   List<Note> _getNotesForIndex(WidgetRef ref, int index) {
     final selectedLabel = ref.watch(selectedLabelProvider);
-    debugPrint(
-        'Getting notes for index: $index, selectedLabel: $selectedLabel');
-
     if (selectedLabel != null) {
       // Watch the notes for the selected label
       final labelNotes = ref.watch(notesByLabelIdProvider(selectedLabel));
-      debugPrint('Label notes count: ${labelNotes.length}');
       return labelNotes;
     }
 
@@ -94,7 +86,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       _ => ref.watch(mainNotesProvider),
     };
 
-    debugPrint('Regular notes count for index $index: ${notes.length}');
     return notes;
   }
 
@@ -102,18 +93,54 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final screenIndex = ref.watch(navigationProvider);
     final selectedLabel = ref.watch(selectedLabelProvider);
-
-    debugPrint(
-        'HomePage build - screenIndex: $screenIndex, selectedLabel: $selectedLabel');
-
+    final isExpanded = ref.watch(fabExpansionProvider);
     final notes = _getNotesForIndex(ref, screenIndex);
-    debugPrint('HomePage build - notes count: ${notes.length}');
+    // Create a dimming overlay widget with Consumer
+    final dimmingOverlay = Consumer(
+      builder: (context, ref, _) {
+        final isExpanded = ref.watch(fabExpansionProvider);
+
+        return isExpanded
+            ? Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_fabKey.currentState != null) {
+                      _fabKey.currentState!.toggle();
+                    }
+                  },
+                  onVerticalDragStart: (_) {
+                    if (_fabKey.currentState != null) {
+                      _fabKey.currentState!.toggle();
+                    }
+                  },
+                  onHorizontalDragStart: (_) {
+                    if (_fabKey.currentState != null) {
+                      _fabKey.currentState!.toggle();
+                    }
+                  },
+                  onVerticalDragEnd: (details) {
+                    if (details.primaryVelocity! > 0 &&
+                        _fabKey.currentState != null) {
+                      _fabKey.currentState!.toggle();
+                    }
+                  },
+                  child: AnimatedOpacity(
+                    opacity: 0.65,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox.shrink();
+      },
+    );
 
     final body = AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor: _isFabExpanded
-            ? Colors.black.withOpacity(0.65)
-            : Colors.transparent,
+        statusBarColor:
+            isExpanded ? Colors.black.withOpacity(0.65) : Colors.transparent,
       ),
       child: Stack(
         children: [
@@ -129,43 +156,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   : _buildGridForIndex(screenIndex, notes),
             ],
           ),
-
-          // Dimming overlay that appears when FAB is expanded
-          if (_isFabExpanded)
-            Positioned.fill(
-              child: GestureDetector(
-                onVerticalDragStart: (details) {
-                  // Collapse FAB when tapping on the overlay
-                  if (_fabKey.currentState != null) {
-                    _fabKey.currentState!.toggle();
-                  }
-                },
-                onHorizontalDragStart: (details) {
-                  // Collapse FAB when tapping on the overlay
-                  if (_fabKey.currentState != null) {
-                    _fabKey.currentState!.toggle();
-                  }
-                },
-                onTap: () {
-                  // Collapse FAB when tapping on the overlay
-                  if (_fabKey.currentState != null) {
-                    _fabKey.currentState!.toggle();
-                  }
-                },
-                onVerticalDragEnd: (details) {
-                  if (details.primaryVelocity! > 0) {
-                    _fabKey.currentState?.toggle();
-                  }
-                },
-                child: AnimatedOpacity(
-                  opacity: _isFabExpanded ? 0.65 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Container(
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ),
+          dimmingOverlay,
         ],
       ),
     );
@@ -179,7 +170,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         toolbarHeight: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: _isFabExpanded
+          statusBarIconBrightness: isExpanded
               ? Brightness.light
               : Theme.of(context).brightness == Brightness.dark
                   ? Brightness.light
@@ -238,27 +229,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   noteType: NoteType.todo,
                 );
               },
-              onToggle: (isExpanded) {
-                setState(() {
-                  _isFabExpanded = isExpanded;
-                });
-              },
             )
           : null,
     );
   }
 
   String _getEmptyMessage(int index) {
-    final selectedLabel = ref.watch(selectedLabelProvider);
-    debugPrint(
-        'Getting empty message for index: $index, selectedLabel: $selectedLabel');
-
-    if (selectedLabel != null) {
-      final label = ref.watch(labelByIdProvider(selectedLabel));
-      debugPrint('Label name: ${label?.name}');
-      return 'No notes with label "${label?.name ?? ''}"';
-    }
-
     return switch (index) {
       0 => 'No notes',
       1 => 'No favorite notes',
@@ -297,7 +273,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref.read(notesProvider.notifier).addNote(newNote);
 
     // Navigate and wait for the hero animation
-    await Navigator.pushNamed(
+    Navigator.pushNamed(
       context,
       AppRoutes.addNote,
       arguments: {
@@ -308,7 +284,4 @@ class _HomePageState extends ConsumerState<HomePage> {
       },
     );
   }
-
-  // Create a global key to access the FAB state
-  final GlobalKey<ExpandableFabState> _fabKey = GlobalKey<ExpandableFabState>();
 }

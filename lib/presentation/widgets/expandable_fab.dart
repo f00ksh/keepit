@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keepit/presentation/providers/fab_provider.dart';
 
-class ExpandableFab extends StatefulWidget {
+class ExpandableFab extends ConsumerStatefulWidget {
   final Function() onTextNotePressed;
   final Function() onTodoNotePressed;
-  final Function(bool isExpanded)? onToggle;
 
   const ExpandableFab({
     super.key,
     required this.onTextNotePressed,
     required this.onTodoNotePressed,
-    this.onToggle,
   });
 
   @override
-  State<ExpandableFab> createState() => ExpandableFabState();
+  ConsumerState<ExpandableFab> createState() => ExpandableFabState();
 }
 
-class ExpandableFabState extends State<ExpandableFab>
+class ExpandableFabState extends ConsumerState<ExpandableFab>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  bool _isExpanded = false;
 
   @override
   void initState() {
@@ -39,23 +38,21 @@ class ExpandableFabState extends State<ExpandableFab>
   }
 
   void toggle() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
+    final fabNotifier = ref.read(fabExpansionProvider.notifier);
+    final isExpanded = !ref.read(fabExpansionProvider);
 
-      if (widget.onToggle != null) {
-        widget.onToggle!(_isExpanded);
-      }
-    });
+    fabNotifier.setExpanded(isExpanded);
+
+    if (isExpanded) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isExpanded = ref.watch(fabExpansionProvider);
 
     return Flow(
       clipBehavior: Clip.none,
@@ -68,13 +65,12 @@ class ExpandableFabState extends State<ExpandableFab>
             return FloatingActionButton(
               heroTag: 'main_add_fab',
               onPressed: toggle,
-              foregroundColor: colorScheme.onSecondaryContainer,
-              backgroundColor: colorScheme.secondaryContainer,
               child: Transform.rotate(
-                angle: _controller.value * math.pi,
+                // 30 degree
+                angle: _controller.value * math.pi * .5,
                 child: Icon(
-                  _isExpanded ? Icons.close : Icons.add,
-                  size: _isExpanded ? 26.0 : 34.0,
+                  isExpanded ? Icons.close : Icons.add,
+                  size: 34.0,
                 ),
               ),
             );
@@ -142,10 +138,12 @@ class ExpandableFabState extends State<ExpandableFab>
     required String label,
     required String heroTag,
   }) {
+    final isExpanded = ref.watch(fabExpansionProvider);
+
     return FloatingActionButton.extended(
-      shape: StadiumBorder(),
+      shape: const StadiumBorder(),
       heroTag: heroTag,
-      onPressed: _isExpanded ? onPressed : null,
+      onPressed: isExpanded ? onPressed : null,
       elevation: 1,
       foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,

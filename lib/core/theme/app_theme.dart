@@ -3,6 +3,21 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const noColorIndex = -1;
 
+  // Add color names that match the color indices
+  static final colorNames = [
+    'Default',
+    'Red',
+    'Orange',
+    'Yellow',
+    'Green',
+    'Teal',
+    'Light Blue',
+    'Blue',
+    'Purple',
+    'Pink',
+    'Brown',
+  ];
+
   static final lightColors = [
     null, // No color option
     const Color(0xfffaafa9),
@@ -46,6 +61,16 @@ class AppTheme {
           brightness: Brightness.dark,
         ),
       );
+}
+
+// Add a utility method to get color name by index
+String getColorName(int? colorIndex) {
+  if (colorIndex == null || colorIndex == AppTheme.noColorIndex)
+    return 'Default';
+  if (colorIndex >= 0 && colorIndex < AppTheme.colorNames.length) {
+    return AppTheme.colorNames[colorIndex];
+  }
+  return 'Unknown';
 }
 
 Color? getNoteColor(BuildContext context, int colorIndex) {

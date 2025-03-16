@@ -156,7 +156,7 @@ class _LabelByIdProviderElement extends AutoDisposeProviderElement<Label?>
   String get id => (origin as LabelByIdProvider).id;
 }
 
-String _$notesByLabelIdHash() => r'3520a8113800f1ffd13b1ec08ffec2bf45b962e5';
+String _$notesByLabelIdHash() => r'2e9b3fa0a3891e7f3d8f1ce290ab0b56ca5673cd';
 
 /// See also [notesByLabelId].
 @ProviderFor(notesByLabelId)

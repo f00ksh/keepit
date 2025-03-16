@@ -31,27 +31,19 @@ class _NotePageState extends ConsumerState<NotePage> {
 
   late String _heroTag;
   bool _hasChanges = false;
-  late NoteType _noteType;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
     _contentController = TextEditingController();
-    _noteType = widget.initialNoteType ?? NoteType.text;
     _heroTag = widget.heroTag;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final note = ref.read(notesProvider.notifier).getNote(widget.noteId);
-      if (note != null) {
-        _titleController.text = note.title;
-        _contentController.text = note.content;
-
-        // Use the note type from the model
-        setState(() {
-          _noteType = note.noteType;
-        });
-      }
+      final note = ref.read(singleNoteProvider(
+          widget.noteId, widget.initialNoteType ?? NoteType.text));
+      _titleController.text = note.title;
+      _contentController.text = note.content;
     });
   }
 
@@ -59,19 +51,14 @@ class _NotePageState extends ConsumerState<NotePage> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(notesProvider);
-    final note = ref.read(notesProvider.notifier).getNote(widget.noteId);
-    if (note == null) {
-      return const Scaffold(
-        body: Center(child: Text('Note not found')),
-      );
-    }
+    // Directly watch the specific note - will automatically rebuild when note changes
+    final note = ref.watch(singleNoteProvider(
+        widget.noteId, widget.initialNoteType ?? NoteType.text));
 
     return PopScope(
       onPopInvokedWithResult: _handlePop,
@@ -105,10 +92,11 @@ class _NotePageState extends ConsumerState<NotePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTitleField(),
-                if (_noteType == NoteType.text ||
+                if (widget.initialNoteType == NoteType.text ||
                     (note.content.isNotEmpty && note.todos.isEmpty))
                   _buildContentField(),
-                if (_noteType == NoteType.todo || note.todos.isNotEmpty)
+                if (widget.initialNoteType == NoteType.todo ||
+                    note.todos.isNotEmpty)
                   NoteTodosSection(
                     note: note,
                     onChanged: () => _hasChanges = true,
@@ -258,7 +246,7 @@ class _NotePageState extends ConsumerState<NotePage> {
         content: _contentController.text.trim(),
         todos: note.todos,
         updatedAt: DateTime.now(),
-        noteType: _noteType,
+        noteType: widget.initialNoteType,
       );
 
       await Future.delayed(const Duration(milliseconds: 150));

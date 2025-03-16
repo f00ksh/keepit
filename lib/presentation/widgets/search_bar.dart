@@ -27,7 +27,7 @@ class AppSearchBar extends ConsumerWidget {
               child: Material(
                 elevation: 0,
                 borderRadius: BorderRadius.circular(28),
-                color: colorScheme.surfaceContainerHigh,
+                color: colorScheme.secondaryContainer,
                 child: InkWell(
                   onTap: () => Navigator.pushNamed(context, '/search'),
                   borderRadius: BorderRadius.circular(28),
@@ -48,10 +48,7 @@ class AppSearchBar extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             'Search notes...',
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
 
@@ -71,7 +68,7 @@ class AppSearchBar extends ConsumerWidget {
                                   )
                                 : CircleAvatar(
                                     backgroundColor:
-                                        colorScheme.primaryContainer,
+                                        colorScheme.tertiaryContainer,
                                     radius: 16,
                                     child: Text(
                                       user?.name
@@ -79,7 +76,6 @@ class AppSearchBar extends ConsumerWidget {
                                               .toUpperCase() ??
                                           'G',
                                       style: TextStyle(
-                                        color: colorScheme.onPrimaryContainer,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),

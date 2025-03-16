@@ -44,7 +44,7 @@ class Notes extends _$Notes {
     state = [noteToAdd, ...currentNotes];
 
     await ref.read(storageServiceProvider).addNote(noteToAdd);
-    ref.invalidateSelf();
+
     _syncWithCloud((service) => service.createNote(noteToAdd)).catchError(
         (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
   }
@@ -375,4 +375,24 @@ class Notes extends _$Notes {
 
     await _updateAndSync(updatedNote);
   }
+}
+
+/// Provider for a single note by ID, automatically updates when the note changes
+@riverpod
+Note singleNote(ref, String noteId, NoteType? noteType) {
+  final allNotes = ref.watch(notesProvider);
+  return allNotes.firstWhere(
+    (note) => note.id == noteId,
+    // If for some reason the note isn't found, create a sensible default
+    // This eliminates the need for null checks in the UI
+    orElse: () => Note(
+      id: noteId,
+      title: '',
+      content: '',
+      colorIndex: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      noteType: noteType ?? NoteType.text,
+    ),
+  );
 }

@@ -7,7 +7,7 @@ part of 'search_provider.dart';
 // **************************************************************************
 
 String _$searchFilteredNotesHash() =>
-    r'2611141a088a7623825fc1c569200451320d2eaa';
+    r'5dab8e61aa93dd892a336c3fb5fdb1f7700df8aa';
 
 /// See also [searchFilteredNotes].
 @ProviderFor(searchFilteredNotes)

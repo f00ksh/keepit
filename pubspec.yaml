@@ -46,12 +46,7 @@ dependencies:
   supabase_flutter: ^2.8.3
   cached_network_image: ^3.3.1
   collection: ^1.18.0
-  flutter_quill:
-    git:
-      url: https://github.com/singerdmx/flutter-quill.git
-      ref: v11.1.0
-  flutter_localizations:
-    sdk: flutter
+  dynamic_color: ^1.7.0
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/data/providers/labels_provider.dart';
+import 'package:keepit/domain/models/label.dart';
 import 'package:keepit/presentation/providers/search_provider.dart';
 
 import 'package:keepit/presentation/widgets/note_grid.dart';
@@ -44,9 +45,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void _initializeControllers() {
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchFocusNode.requestFocus();
-    });
   }
 
   @override
@@ -98,12 +96,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       shape: CircleBorder(
         side: isColorItem
             ? BorderSide(
-                color: colorScheme.outline.withOpacity(0.7),
+                color: colorScheme.onSecondaryContainer.withOpacity(0.5),
                 width: _screenWidth * 0.002,
               )
             : BorderSide.none,
       ),
-      color: backgroundColor ?? colorScheme.surfaceContainerHighest,
+      color: backgroundColor ?? colorScheme.secondaryContainer,
       elevation: 0,
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -175,6 +173,46 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
+  String _getSearchHint() {
+    final selectedLabels = ref.watch(selectedSearchLabelsProvider);
+    final selectedColorIndex = ref.watch(selectedSearchColorProvider);
+    final labels = ref.watch(labelsProvider);
+
+    // Default hint
+    if (selectedLabels.isEmpty && selectedColorIndex == null) {
+      return 'Search notes';
+    }
+
+    // Get selected label names
+    List<String> labelNames = [];
+    for (var labelId in selectedLabels) {
+      final label = labels.firstWhere(
+        (l) => l.id == labelId,
+        orElse: () => Label(id: '', name: 'unknown'),
+      );
+      labelNames.add(label.name);
+    }
+
+    // Get selected color name using global utility method
+    String colorName =
+        selectedColorIndex != null ? getColorName(selectedColorIndex) : '';
+
+    // Build the hint text
+    if (labelNames.isNotEmpty && selectedColorIndex != null) {
+      // Both labels and color selected
+      return 'Search in ${labelNames.join(', ')} with $colorName color';
+    } else if (labelNames.isNotEmpty) {
+      // Only labels selected
+      return 'Search in ${labelNames.join(', ')}';
+    } else if (selectedColorIndex != null) {
+      // Only color selected
+      return 'Search in $colorName';
+    }
+
+    // Fallback
+    return 'Search in filtered notes';
+  }
+
   @override
   Widget build(BuildContext context) {
     final labels = ref.watch(labelsProvider);
@@ -190,31 +228,35 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           child: Material(
             elevation: 0,
             child: AppBar(
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceContainerHigh,
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .secondaryContainer
+                  .withOpacity(.5),
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: _handleBackPress,
               ),
-              title: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                decoration: InputDecoration(
-                  hintText: isSearchMode
-                      ? 'Search in filtered notes'
-                      : 'Search notes',
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+              title: GestureDetector(
+                onTap: () {
+                  _searchFocusNode.requestFocus();
+                },
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  autofocus: false,
+                  decoration: InputDecoration(
+                    hintText: _getSearchHint(),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    hintStyle: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  onChanged: _onSearchQueryChanged,
                 ),
-                style: Theme.of(context).textTheme.bodyLarge,
-                onChanged: _onSearchQueryChanged,
               ),
               actions: [
                 if (isSearchMode)
