@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/models/note.dart';
 import '../../domain/models/label.dart';
+import '../../domain/models/settings.dart';
 
 class StorageService {
   static const String _tag = 'StorageService';
   static const String notesBoxName = 'notes';
   static const String labelsBoxName = 'labels';
+  static const String settingsBoxName = 'settings';
 
   late Box<Note> _notesBox;
   late Box<Label> _labelsBox;
+  late Box<Setting> _settingsBox;
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
@@ -28,12 +31,17 @@ class StorageService {
       Hive.registerAdapter(LabelAdapter());
     }
 
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(SettingAdapter());
+    }
+
     try {
       _notesBox = await Hive.openBox<Note>(notesBoxName);
       _labelsBox = await Hive.openBox<Label>(labelsBoxName);
+      _settingsBox = await Hive.openBox<Setting>(settingsBoxName);
       _isInitialized = true;
       debugPrint(
-          '$_tag: Storage service initialized with notes and labels boxes');
+          '$_tag: Storage service initialized with notes, labels, and settings boxes');
     } catch (e) {
       debugPrint('$_tag: Error initializing storage - $e');
       // Try to recover from corruption
@@ -45,15 +53,54 @@ class StorageService {
     try {
       await Hive.deleteBoxFromDisk(notesBoxName);
       await Hive.deleteBoxFromDisk(labelsBoxName);
+      await Hive.deleteBoxFromDisk(settingsBoxName);
       debugPrint('$_tag: Recovering corrupted boxes');
 
       _notesBox = await Hive.openBox<Note>(notesBoxName);
       _labelsBox = await Hive.openBox<Label>(labelsBoxName);
+      _settingsBox = await Hive.openBox<Setting>(settingsBoxName);
       _isInitialized = true;
     } catch (e) {
       debugPrint('$_tag: Failed to recover from error - $e');
       rethrow;
     }
+  }
+
+  // Settings operations
+  Future<Setting?> getSettings() async {
+    if (!_isInitialized) {
+      await init();
+    }
+
+    // Use a constant key for settings - we only have one settings object
+    const String settingsKey = 'app_settings';
+
+    // Get settings from box, or return null if not found
+    final settings = _settingsBox.get(settingsKey);
+
+    if (settings == null) {
+      debugPrint('$_tag: No settings found, returning default settings');
+      // Since no settings exist yet, create and save default settings
+      final defaultSettings = Setting();
+      await saveSettings(defaultSettings);
+      return defaultSettings;
+    }
+
+    debugPrint('$_tag: Retrieved app settings');
+    return settings;
+  }
+
+  Future<void> saveSettings(Setting settings) async {
+    if (!_isInitialized) {
+      await init();
+    }
+
+    // Use a constant key for settings
+    const String settingsKey = 'app_settings';
+
+    debugPrint('$_tag: Saving app settings');
+    await _settingsBox.put(settingsKey, settings);
+    debugPrint('$_tag: App settings saved successfully');
   }
 
   // Note operations

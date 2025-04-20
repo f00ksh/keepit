@@ -113,6 +113,7 @@ class _NoteTodosSectionState extends ConsumerState<NoteTodosSection> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: todos.length,
@@ -146,7 +147,7 @@ class _NoteTodosSectionState extends ConsumerState<NoteTodosSection> {
                 ref
                     .read(notesProvider.notifier)
                     .deleteTodo(widget.note.id, todo.id);
-                widget.onChanged();
+                // widget.onChanged();
               },
             ),
           );

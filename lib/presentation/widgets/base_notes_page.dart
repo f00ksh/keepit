@@ -57,9 +57,7 @@ class _BaseNotesPageState extends ConsumerState<BaseNotesPage> {
         body: CustomScrollView(
           slivers: [
             if (widget.showSearch) // Conditionally show search bar
-              AppSearchBar(
-           
-              ),
+              AppSearchBar(),
             widget.content,
           ],
         ),

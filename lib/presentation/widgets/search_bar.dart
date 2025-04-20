@@ -25,9 +25,10 @@ class AppSearchBar extends ConsumerWidget {
             Hero(
               tag: 'search_bar',
               child: Material(
-                elevation: 0,
+                elevation: 5,
+                shadowColor: Colors.transparent,
                 borderRadius: BorderRadius.circular(28),
-                color: colorScheme.secondaryContainer,
+                surfaceTintColor: colorScheme.surfaceTint,
                 child: InkWell(
                   onTap: () => Navigator.pushNamed(context, '/search'),
                   borderRadius: BorderRadius.circular(28),

@@ -167,25 +167,16 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
             ),
 
             // Delete button with improved animation
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: _hasFocus ? 36 : 0,
-              curve: Curves.easeInOut,
-              clipBehavior: Clip.antiAlias,
-              decoration: const BoxDecoration(),
-              child: _hasFocus
-                  ? IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      onPressed: widget.onDelete,
-                      tooltip: 'Delete task',
-                    )
-                  : null,
-            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.close,
+                size: 18,
+                color: colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onPressed: widget.onDelete,
+              tooltip: 'Delete task',
+            )
           ],
         ),
       ),

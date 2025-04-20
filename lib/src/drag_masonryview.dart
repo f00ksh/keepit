@@ -103,6 +103,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
       child: buildContainer(
         buildItems: (List<Widget> children) {
           return MasonryGridView.count(
+            addAutomaticKeepAlives: true,
             addRepaintBoundaries: false,
             shrinkWrap: true,
             padding:

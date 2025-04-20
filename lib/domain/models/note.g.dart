@@ -32,13 +32,14 @@ class NoteAdapter extends TypeAdapter<Note> {
       todos: (fields[12] as List).cast<TodoItem>(),
       deltaContent: fields[13] as String,
       noteType: fields[14] as NoteType,
+      wallpaperIndex: fields[15] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Note obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +69,9 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(13)
       ..write(obj.deltaContent)
       ..writeByte(14)
-      ..write(obj.noteType);
+      ..write(obj.noteType)
+      ..writeByte(15)
+      ..write(obj.wallpaperIndex);
   }
 
   @override

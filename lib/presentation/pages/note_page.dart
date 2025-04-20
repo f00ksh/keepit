@@ -8,6 +8,9 @@ import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
 import 'package:keepit/presentation/widgets/note_page/note_todos_section.dart';
 import 'package:keepit/presentation/widgets/note_page/note_bottom_bar.dart';
+import 'package:keepit/presentation/widgets/wallpaper_picker.dart';
+import 'package:keepit/presentation/widgets/color_indicator.dart';
+import 'package:keepit/core/theme/text_styles.dart';
 
 class NotePage extends ConsumerStatefulWidget {
   final String noteId;
@@ -60,6 +63,21 @@ class _NotePageState extends ConsumerState<NotePage> {
     final note = ref.watch(singleNoteProvider(
         widget.noteId, widget.initialNoteType ?? NoteType.text));
 
+    // Get wallpaper asset path if set
+    final wallpaperPath =
+        AppTheme.getNoteWallpaperAssetPath(context, note.wallpaperIndex);
+    // Create the image provider directly in build if path exists
+    final wallpaperImage = wallpaperPath != null
+        ? ResizeImage(
+            AssetImage(wallpaperPath),
+            width: 600,
+            height: 800,
+          )
+        : null;
+    // Precache the image if it exists
+    if (wallpaperImage != null) {
+      precacheImage(wallpaperImage, context);
+    }
     return PopScope(
       onPopInvokedWithResult: _handlePop,
       child: Hero(
@@ -68,13 +86,37 @@ class _NotePageState extends ConsumerState<NotePage> {
           builder: (context) {
             _updateHeroTag();
             return Scaffold(
-              backgroundColor: getNoteColor(context, note.colorIndex),
-              appBar: _buildAppBar(note),
-              body: _buildBody(note),
-              bottomNavigationBar: NoteBottomBar(
-                note: note,
-                onColorPick: () => _showColorPicker(note),
-                onMoreOptions: () => _showMoreOptions(note),
+              backgroundColor: Colors.transparent, // Make scaffold transparent
+              body: Container(
+                decoration: BoxDecoration(
+                  color: getNoteColor(context, note.colorIndex),
+                  borderRadius:
+                      BorderRadius.circular(12), // Add rounded corners
+                  image: wallpaperImage != null
+                      ? DecorationImage(
+                          image: wallpaperImage,
+                          fit: BoxFit.fill,
+                          alignment: Alignment.center,
+                        )
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    // AppBar equivalent
+                    _buildCustomAppBar(note),
+                    // Main content (takes all remaining space)
+                    Expanded(
+                      child: _buildBodyContent(note),
+                    ),
+                    // Bottom bar
+                    NoteBottomBar(
+                      note: note,
+                      onColorPick: () => _showCustomizationOptions(note),
+                      onMoreOptions: () => _showMoreOptions(note),
+                      isTransparent: note.wallpaperIndex != 0,
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -83,36 +125,40 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  Widget _buildBody(Note note) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildBodyContent(Note note) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTitleField(),
+          if (widget.initialNoteType == NoteType.text ||
+              (note.content.isNotEmpty && note.todos.isEmpty))
+            _buildContentField(),
+          if (widget.initialNoteType == NoteType.todo || note.todos.isNotEmpty)
+            NoteTodosSection(
+              note: note,
+              onChanged: () => _hasChanges = true,
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 14),
+            child: Row(
               children: [
-                _buildTitleField(),
-                if (widget.initialNoteType == NoteType.text ||
-                    (note.content.isNotEmpty && note.todos.isEmpty))
-                  _buildContentField(),
-                if (widget.initialNoteType == NoteType.todo ||
-                    note.todos.isNotEmpty)
-                  NoteTodosSection(
-                    note: note,
-                    onChanged: () => _hasChanges = true,
+                NoteLabelsSection(
+                  note: note,
+                  isEditable: true,
+                ),
+                // Show color indicator when note has wallpaper and color
+                if (note.wallpaperIndex != 0 &&
+                    note.colorIndex != AppTheme.noColorIndex)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ColorIndicator(colorIndex: note.colorIndex),
                   ),
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: NoteLabelsSection(
-            note: note,
-            isEditable: true,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -124,7 +170,7 @@ class _NotePageState extends ConsumerState<NotePage> {
         border: InputBorder.none,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-      style: Theme.of(context).textTheme.titleLarge,
+      style: AppTextStyles.noteTitleStyle(context),
       onChanged: (_) => _hasChanges = true,
     );
   }
@@ -137,7 +183,7 @@ class _NotePageState extends ConsumerState<NotePage> {
         border: InputBorder.none,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-      style: Theme.of(context).textTheme.bodyLarge,
+      style: AppTextStyles.noteContentStyle(context),
       maxLines: null,
       keyboardType: TextInputType.multiline,
       textCapitalization: TextCapitalization.sentences,
@@ -145,62 +191,72 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  AppBar _buildAppBar(Note note) {
-    return AppBar(
-      backgroundColor: getNoteColor(context, note.colorIndex),
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
+  // Replace _buildAppBar with a custom widget that works with the Stack
+  Widget _buildCustomAppBar(Note note) {
+    return Container(
+      height: kToolbarHeight + MediaQuery.of(context).padding.top,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top,
       ),
-      actions: [
-        Wrap(
-          spacing: 4,
-          children: [
-            IconButton(
-              icon: Icon(
-                  note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-              onPressed: () => _updateNote(note, isPinned: !note.isPinned),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: Wrap(
+              spacing: 4,
+              children: [
+                IconButton(
+                  icon: Icon(
+                      note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                  onPressed: () => _updateNote(note, isPinned: !note.isPinned),
+                ),
+                IconButton(
+                  icon: Icon(
+                      note.isFavorite ? Icons.favorite : Icons.favorite_border),
+                  onPressed: () =>
+                      _updateNote(note, isFavorite: !note.isFavorite),
+                ),
+                if (!note.isDeleted)
+                  IconButton(
+                    icon: const Icon(Icons.notification_add_outlined),
+                    onPressed: () {
+                      // TODO: Implement reminder feature
+                    },
+                  ),
+                if (note.isDeleted) ...[
+                  IconButton(
+                    icon: const Icon(Icons.delete_forever),
+                    onPressed: () {
+                      // TODO: Implement permanent delete
+                      Navigator.pop(context);
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.restore),
+                    onPressed: () {
+                      _updateNote(note, isDeleted: false);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+                if (note.isArchived && !note.isDeleted)
+                  IconButton(
+                    icon: const Icon(Icons.unarchive),
+                    onPressed: () {
+                      _updateNote(note, isArchived: false);
+                      Navigator.pop(context);
+                    },
+                  ),
+              ],
             ),
-            IconButton(
-              icon: Icon(
-                  note.isFavorite ? Icons.favorite : Icons.favorite_border),
-              onPressed: () => _updateNote(note, isFavorite: !note.isFavorite),
-            ),
-            if (!note.isDeleted)
-              IconButton(
-                icon: const Icon(Icons.notification_add_outlined),
-                onPressed: () {
-                  // TODO: Implement reminder feature
-                },
-              ),
-            if (note.isDeleted) ...[
-              IconButton(
-                icon: const Icon(Icons.delete_forever),
-                onPressed: () {
-                  // TODO: Implement permanent delete
-                  Navigator.pop(context);
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.restore),
-                onPressed: () {
-                  _updateNote(note, isDeleted: false);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-            if (note.isArchived && !note.isDeleted)
-              IconButton(
-                icon: const Icon(Icons.unarchive),
-                onPressed: () {
-                  _updateNote(note, isArchived: false);
-                  Navigator.pop(context);
-                },
-              ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -239,7 +295,6 @@ class _NotePageState extends ConsumerState<NotePage> {
 
     // Check if note is empty including the case of single empty todo
     final isEmpty = _isNoteEmpty(note);
-
     if (_hasChanges) {
       final updatedNote = note.copyWith(
         title: _titleController.text.trim(),
@@ -295,16 +350,22 @@ class _NotePageState extends ConsumerState<NotePage> {
             return const SizedBox.shrink();
           }
 
+          // Get colors based on wallpaper or note color
+          final backgroundColor =
+              currentNote.wallpaperIndex != AppTheme.noWallpaperIndex &&
+                      currentNote.wallpaperIndex != 0
+                  ? getNoteWallpaperColor(context, currentNote.wallpaperIndex)
+                  : getNoteColor(context, currentNote.colorIndex);
+
           final colorScheme = Theme.of(context).colorScheme;
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final handleColor = isDark
               ? colorScheme.onSurface.withOpacity(0.4)
               : colorScheme.onSurfaceVariant.withOpacity(0.4);
-          final noteColor = getNoteColor(context, currentNote.colorIndex);
 
           return Container(
             decoration: BoxDecoration(
-              color: noteColor,
+              color: backgroundColor,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(28),
               ),
@@ -402,7 +463,8 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  void _showColorPicker(Note note) {
+  // Modify this method to show both colors and wallpapers in a single column without divider
+  void _showCustomizationOptions(Note note) {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -411,24 +473,21 @@ class _NotePageState extends ConsumerState<NotePage> {
       builder: (context) => Consumer(
         builder: (context, ref, _) {
           ref.watch(notesProvider);
-          final currentNote =
-              ref.read(notesProvider.notifier).getNote(widget.noteId);
+          final currentNote = ref
+              .read(singleNoteProvider(widget.noteId, widget.initialNoteType));
 
-          if (currentNote == null) {
-            Navigator.pop(context);
-            return const SizedBox.shrink();
-          }
+          // Get colors based on wallpaper or note color
+          final backgroundColor =
+              currentNote.wallpaperIndex != AppTheme.noWallpaperIndex &&
+                      currentNote.wallpaperIndex != 0
+                  ? getNoteWallpaperColor(context, currentNote.wallpaperIndex)
+                  : getNoteColor(context, currentNote.colorIndex);
 
-          final noteColor = getNoteColor(context, currentNote.colorIndex);
           final colorScheme = Theme.of(context).colorScheme;
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final handleColor = isDark
-              ? colorScheme.onSurface.withOpacity(0.4)
-              : colorScheme.onSurfaceVariant.withOpacity(0.4);
 
           return Container(
             decoration: BoxDecoration(
-              color: noteColor,
+              color: backgroundColor ?? colorScheme.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(28),
               ),
@@ -436,23 +495,69 @@ class _NotePageState extends ConsumerState<NotePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: handleColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                // Handle
+                // Center(
+                //   child: Padding(
+                //     padding: const EdgeInsets.symmetric(vertical: 8),
+                //     child: Container(
+                //       width: 32,
+                //       height: 4,
+                //       decoration: BoxDecoration(
+                //         color: handleColor,
+                //         borderRadius: BorderRadius.circular(2),
+                //       ),
+                //     ),
+                //   ),
+                // ),
+
+                // Colors section
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 14.0,
+                    right: 14.0,
+                    top: 14.0,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Colors',
+                      style: AppTextStyles.sectionTitleStyle(context),
                     ),
                   ),
                 ),
-                ColorPickerContent(
-                  noteId: widget.noteId,
-                  initialColorIndex: currentNote.colorIndex,
+                SizedBox(
+                  height: 100, // Fixed height for color picker
+                  child: ColorPickerContent(
+                    noteId: widget.noteId,
+                    initialColorIndex: currentNote.colorIndex,
+                  ),
                 ),
+
+                // No divider now
+
+                // Wallpapers section
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 14.0,
+                    right: 14.0,
+                    top: 14.0,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Wallpapers',
+                      style: AppTextStyles.sectionTitleStyle(context),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 100, // Reduced height for wallpaper picker
+                  child: WallpaperPickerContent(
+                    noteId: widget.noteId,
+                    initialWallpaperIndex: currentNote.wallpaperIndex,
+                  ),
+                ),
+
                 SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
               ],
             ),

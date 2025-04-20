@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:flutter/material.dart';
 
 part 'settings.g.dart';
 
@@ -19,12 +20,24 @@ class Setting extends HiveObject {
   @HiveField(4)
   bool syncEnabled;
 
+  @HiveField(5)
+  bool useDynamicColors;
+
+  @HiveField(6)
+  int accentColorIndex;
+
+  @HiveField(7)
+  String themeMode;
+
   Setting({
     this.viewStyle = 'grid',
     this.sortBy = 'dateModified',
     this.sortAscending = false,
     this.showPinnedSection = true,
     this.syncEnabled = false,
+    this.useDynamicColors = true,
+    this.accentColorIndex = 0,
+    this.themeMode = 'system',
   });
 
   Setting copyWith({
@@ -33,6 +46,9 @@ class Setting extends HiveObject {
     bool? sortAscending,
     bool? showPinnedSection,
     bool? syncEnabled,
+    bool? useDynamicColors,
+    int? accentColorIndex,
+    String? themeMode,
   }) {
     return Setting(
       viewStyle: viewStyle ?? this.viewStyle,
@@ -40,6 +56,20 @@ class Setting extends HiveObject {
       sortAscending: sortAscending ?? this.sortAscending,
       showPinnedSection: showPinnedSection ?? this.showPinnedSection,
       syncEnabled: syncEnabled ?? this.syncEnabled,
+      useDynamicColors: useDynamicColors ?? this.useDynamicColors,
+      accentColorIndex: accentColorIndex ?? this.accentColorIndex,
+      themeMode: themeMode ?? this.themeMode,
     );
+  }
+
+  ThemeMode getThemeMode() {
+    switch (themeMode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
   }
 }

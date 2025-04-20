@@ -5,17 +5,20 @@ class NoteBottomBar extends StatelessWidget {
   final Note note;
   final VoidCallback onColorPick;
   final VoidCallback onMoreOptions;
+  final bool isTransparent;
 
   const NoteBottomBar({
     super.key,
     required this.note,
     required this.onColorPick,
     required this.onMoreOptions,
+    required this.isTransparent,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: isTransparent ? Colors.transparent : null,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

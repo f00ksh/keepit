@@ -6,13 +6,12 @@ part of 'theme_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appThemeModeHash() => r'4fba1763b2d8dd4d798daec787ad269cae4ad6b5';
+String _$appThemeModeHash() => r'40d275eccd927e98caa140a3f4301938b4e7ee46';
 
-/// See also [AppThemeMode].
-@ProviderFor(AppThemeMode)
-final appThemeModeProvider =
-    AutoDisposeNotifierProvider<AppThemeMode, ThemeMode>.internal(
-  AppThemeMode.new,
+/// See also [appThemeMode].
+@ProviderFor(appThemeMode)
+final appThemeModeProvider = AutoDisposeProvider<ThemeMode>.internal(
+  appThemeMode,
   name: r'appThemeModeProvider',
   debugGetCreateSourceHash:
       const bool.fromEnvironment('dart.vm.product') ? null : _$appThemeModeHash,
@@ -20,22 +19,42 @@ final appThemeModeProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$AppThemeMode = AutoDisposeNotifier<ThemeMode>;
-String _$selectedColorHash() => r'6b8ed2baac9acca459c412eb404551dedea9857c';
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AppThemeModeRef = AutoDisposeProviderRef<ThemeMode>;
+String _$useDynamicColorsHash() => r'c6309f921d4e62d00e374c31af189ec827cc5e93';
 
-/// See also [SelectedColor].
-@ProviderFor(SelectedColor)
-final selectedColorProvider =
-    AutoDisposeNotifierProvider<SelectedColor, int>.internal(
-  SelectedColor.new,
-  name: r'selectedColorProvider',
+/// See also [useDynamicColors].
+@ProviderFor(useDynamicColors)
+final useDynamicColorsProvider = AutoDisposeProvider<bool>.internal(
+  useDynamicColors,
+  name: r'useDynamicColorsProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$selectedColorHash,
+      : _$useDynamicColorsHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$SelectedColor = AutoDisposeNotifier<int>;
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UseDynamicColorsRef = AutoDisposeProviderRef<bool>;
+String _$accentColorIndexHash() => r'0c396a18c04be6ec4d5371fb7efa84b9639221ca';
+
+/// See also [accentColorIndex].
+@ProviderFor(accentColorIndex)
+final accentColorIndexProvider = AutoDisposeProvider<int>.internal(
+  accentColorIndex,
+  name: r'accentColorIndexProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$accentColorIndexHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AccentColorIndexRef = AutoDisposeProviderRef<int>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

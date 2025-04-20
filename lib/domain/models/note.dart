@@ -1,7 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:keepit/core/constants/app_constants.dart';
 import 'package:keepit/domain/models/todo_item.dart';
-import 'dart:developer' as developer;
 
 part 'note.g.dart';
 
@@ -62,6 +61,9 @@ class Note {
   @HiveField(14)
   final NoteType noteType;
 
+  @HiveField(15)
+  final int wallpaperIndex;
+
   Note({
     required this.id,
     required this.title,
@@ -78,6 +80,7 @@ class Note {
     this.todos = const [],
     this.deltaContent = '',
     this.noteType = NoteType.text,
+    this.wallpaperIndex = AppConstants.defaultWallpaperIndex,
   });
 
   Note copyWith({
@@ -96,14 +99,9 @@ class Note {
     List<TodoItem>? todos,
     String? deltaContent,
     NoteType? noteType,
+    int? wallpaperIndex,
   }) {
-    // Debug log for todos
-    if (todos != null) {
-      developer.log('Note.copyWith: Updating todos - count=${todos.length}',
-          name: 'Note');
-    }
-
-    return Note(
+    final newNote = Note(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
@@ -119,14 +117,14 @@ class Note {
       todos: todos ?? this.todos,
       deltaContent: deltaContent ?? this.deltaContent,
       noteType: noteType ?? this.noteType,
+      wallpaperIndex: wallpaperIndex ?? this.wallpaperIndex,
     );
+
+    return newNote;
   }
 
   Map<String, dynamic> toJson() {
     final todoJsonList = todos.map((todo) => todo.toJson()).toList();
-    developer.log(
-        'Note.toJson: todoCount=${todos.length}, todoJsons=$todoJsonList',
-        name: 'Note');
 
     return {
       'id': id,
@@ -144,6 +142,7 @@ class Note {
       'todos': todoJsonList,
       'delta_content': deltaContent,
       'note_type': noteType.index, // Store as integer
+      'wallpaper_index': wallpaperIndex,
     };
   }
 
@@ -173,6 +172,8 @@ class Note {
       isPinned: json['is_pinned'] ?? false,
       isFavorite: json['is_favorite'] ?? false,
       colorIndex: json['color_index'] ?? AppConstants.defaultNoteColorIndex,
+      wallpaperIndex:
+          json['wallpaper_index'] ?? AppConstants.defaultWallpaperIndex,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       isArchived: json['is_archived'] ?? false,

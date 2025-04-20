@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:keepit/data/providers/settings_provider.dart';
+
 part 'theme_provider.g.dart';
 
 @riverpod
-class AppThemeMode extends _$AppThemeMode {
-  @override
-  ThemeMode build() => ThemeMode.system;
-
-  void setThemeMode(ThemeMode mode) => state = mode;
+ThemeMode appThemeMode(ref) {
+  // Read theme mode from settings
+  final settings = ref.watch(settingsProvider);
+  return settings.getThemeMode();
 }
 
 @riverpod
-class SelectedColor extends _$SelectedColor {
-  @override
-  int build() => 0;
-  // update
-  void update(int index) {
-    state = index;
-  }
+bool useDynamicColors(ref) {
+  final settings = ref.watch(settingsProvider);
+  return settings.useDynamicColors;
+}
+
+@riverpod
+int accentColorIndex(ref) {
+  final settings = ref.watch(settingsProvider);
+  return settings.accentColorIndex;
 }

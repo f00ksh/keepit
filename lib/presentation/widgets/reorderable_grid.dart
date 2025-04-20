@@ -80,6 +80,28 @@ class ReorderableGrid extends ConsumerWidget {
                   arguments: note.id,
                 );
               },
+              enableDismiss: true,
+              onDismissed: (direction) {
+                ref.read(notesProvider.notifier).updateNoteStatus(
+                      note.id,
+                      isDeleted: true,
+                    );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Note moved to trash'),
+                    action: SnackBarAction(
+                      label: 'UNDO',
+                      onPressed: () {
+                        ref.read(notesProvider.notifier).updateNoteStatus(
+                              note.id,
+                              isDeleted: false,
+                            );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
             crossAxisCellCount: 1,
           );

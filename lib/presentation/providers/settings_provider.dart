@@ -12,14 +12,14 @@ class Settings extends _$Settings {
   @override
   Future<Setting> build() async {
     _box = await Hive.openBox<Setting>(_boxName);
-    
+
     // Ensure default settings are created if they don't exist
     if (!_box.containsKey('user_settings')) {
       final defaultSettings = Setting(syncEnabled: false);
       await _box.put('user_settings', defaultSettings);
       return defaultSettings;
     }
-    
+
     return _box.get('user_settings')!;
   }
 
@@ -61,7 +61,7 @@ class Settings extends _$Settings {
     final newSettings = currentSettings.copyWith(
       syncEnabled: !currentSettings.syncEnabled,
     );
-    
+
     try {
       await _saveSettings(newSettings);
     } catch (e, stack) {

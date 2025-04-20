@@ -8,4 +8,5 @@ class AppConstants {
   static const maxContentLength = 2000;
   static const defaultNoteColorIndex = -1; // Update to use no color as default
   static const String redirectUrl = 'io.supabase.keepit://login-callback/';
+  static const int defaultWallpaperIndex = -1; // No wallpaper by default
 }

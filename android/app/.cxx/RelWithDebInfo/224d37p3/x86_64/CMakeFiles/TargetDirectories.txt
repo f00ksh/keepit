@@ -1,0 +1,2 @@
+D:/New folder/keepit/-keepit/android/app/.cxx/RelWithDebInfo/224d37p3/x86_64/CMakeFiles/edit_cache.dir
+D:/New folder/keepit/-keepit/android/app/.cxx/RelWithDebInfo/224d37p3/x86_64/CMakeFiles/rebuild_cache.dir

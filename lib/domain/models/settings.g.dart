@@ -22,13 +22,16 @@ class SettingAdapter extends TypeAdapter<Setting> {
       sortAscending: fields[2] as bool,
       showPinnedSection: fields[3] as bool,
       syncEnabled: fields[4] as bool,
+      useDynamicColors: fields[5] as bool,
+      accentColorIndex: fields[6] as int,
+      themeMode: fields[7] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Setting obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.viewStyle)
       ..writeByte(1)
@@ -38,7 +41,13 @@ class SettingAdapter extends TypeAdapter<Setting> {
       ..writeByte(3)
       ..write(obj.showPinnedSection)
       ..writeByte(4)
-      ..write(obj.syncEnabled);
+      ..write(obj.syncEnabled)
+      ..writeByte(5)
+      ..write(obj.useDynamicColors)
+      ..writeByte(6)
+      ..write(obj.accentColorIndex)
+      ..writeByte(7)
+      ..write(obj.themeMode);
   }
 
   @override

@@ -6,7 +6,7 @@ part of 'notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$singleNoteHash() => r'7defcaae101d0d6b9299a48d92afb8d821a227b8';
+String _$singleNoteHash() => r'90d550803d5c51730a98c5868eee274287a4a495';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -49,7 +49,7 @@ class SingleNoteFamily extends Family<Note> {
   /// Copied from [singleNote].
   SingleNoteProvider call(
     String noteId,
-    NoteType noteType,
+    NoteType? noteType,
   ) {
     return SingleNoteProvider(
       noteId,
@@ -91,7 +91,7 @@ class SingleNoteProvider extends AutoDisposeProvider<Note> {
   /// Copied from [singleNote].
   SingleNoteProvider(
     String noteId,
-    NoteType noteType,
+    NoteType? noteType,
   ) : this._internal(
           (ref) => singleNote(
             ref as SingleNoteRef,
@@ -123,7 +123,7 @@ class SingleNoteProvider extends AutoDisposeProvider<Note> {
   }) : super.internal();
 
   final String noteId;
-  final NoteType noteType;
+  final NoteType? noteType;
 
   @override
   Override overrideWith(
@@ -173,7 +173,7 @@ mixin SingleNoteRef on AutoDisposeProviderRef<Note> {
   String get noteId;
 
   /// The parameter `noteType` of this provider.
-  NoteType get noteType;
+  NoteType? get noteType;
 }
 
 class _SingleNoteProviderElement extends AutoDisposeProviderElement<Note>
@@ -183,10 +183,10 @@ class _SingleNoteProviderElement extends AutoDisposeProviderElement<Note>
   @override
   String get noteId => (origin as SingleNoteProvider).noteId;
   @override
-  NoteType get noteType => (origin as SingleNoteProvider).noteType;
+  NoteType? get noteType => (origin as SingleNoteProvider).noteType;
 }
 
-String _$notesHash() => r'b3cb34a26407ae06aad98d92711281647d5d9336';
+String _$notesHash() => r'4e8115e1a320d0f9ea806c14637d88e4af5665a7';
 
 /// See also [Notes].
 @ProviderFor(Notes)

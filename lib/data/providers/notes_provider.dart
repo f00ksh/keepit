@@ -50,17 +50,16 @@ class Notes extends _$Notes {
   }
 
   Future<void> updateNote(String id, Note updatedNote) async {
+    // First save to storage
+    await ref.read(storageServiceProvider).updateNote(updatedNote);
+    // Then update state
     final currentNotes = List<Note>.from(state);
     final index = currentNotes.indexWhere((note) => note.id == id);
-
     if (index == -1) return;
-
     currentNotes[index] = updatedNote;
     state = currentNotes;
-
-    await ref.read(storageServiceProvider).updateNote(updatedNote);
-    _syncWithCloud((service) => service.updateNote(updatedNote)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    // Finally sync with cloud if needed
+    await _syncWithCloud((service) => service.updateNote(updatedNote));
   }
 
   Future<void> updateNoteStatus(

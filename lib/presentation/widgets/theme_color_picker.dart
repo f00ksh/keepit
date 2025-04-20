@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/theme/app_theme.dart';
+import 'package:keepit/core/constants/ui_constants.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 
-class ColorPickerContent extends ConsumerWidget {
+class ColorPickerContent extends ConsumerStatefulWidget {
   final String noteId;
   final int initialColorIndex;
 
@@ -14,56 +15,90 @@ class ColorPickerContent extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ColorPickerContent> createState() => _ColorPickerContentState();
+}
+
+class _ColorPickerContentState extends ConsumerState<ColorPickerContent> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+
+    // Scroll to selected item after layout is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelectedItem();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelectedItem() {
+    if (widget.initialColorIndex <= 0) {
+      return; // Don't scroll for default selection
+    }
+
+    // Calculate scroll position based on item index
+    final selectedIndex = widget.initialColorIndex;
+    final sizeConstants = UIConstants.of(context);
+    final scrollOffset = (selectedIndex *
+            (sizeConstants.colorItemSize + sizeConstants.colorItemSpacing)) -
+        sizeConstants.colorPickerHorizontalPadding;
+
+    // Ensure we don't scroll beyond bounds
+    if (scrollOffset > 0) {
+      // Add small delay to ensure ListView is properly laid out
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            scrollOffset,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = isDark ? AppTheme.darkColors : AppTheme.lightColors;
     final colorScheme = Theme.of(context).colorScheme;
+    final sizeConstants = UIConstants.of(context);
 
-    debugPrint('ColorPickerContent rebuild with index: $initialColorIndex');
-    return _buildColorGrid(ref, colorScheme, colors, initialColorIndex);
-  }
-
-  Widget _buildColorGrid(WidgetRef ref, ColorScheme colorScheme,
-      List<Color?> colors, int noteColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding:
+          EdgeInsets.symmetric(vertical: sizeConstants.standardVerticalPadding),
       child: SizedBox(
-        height: 80,
+        height: sizeConstants.colorPickerHeight,
         child: ListView.separated(
+          controller: _scrollController,
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(
+              horizontal: sizeConstants.colorPickerHorizontalPadding),
           itemCount: colors.length,
-          separatorBuilder: (context, index) => const SizedBox(width: 16),
+          separatorBuilder: (context, index) =>
+              SizedBox(width: sizeConstants.colorItemSpacing),
           itemBuilder: (context, index) {
+            final note = ref.read(notesProvider).firstWhere(
+                  (note) => note.id == widget.noteId,
+                );
+            final isSelected = note.colorIndex == index;
             final color = colors[index];
-            if (color == null) {
-              return _ColorCircle(
-                color: colorScheme.surface,
-                isSelected: index == noteColor,
-                onTap: () {
-                  debugPrint('Tapped no color option, index: $index');
-                  final note = ref.read(notesProvider).firstWhere(
-                        (note) => note.id == noteId,
-                      );
-                  ref.read(notesProvider.notifier).updateNote(
-                        noteId,
-                        note.copyWith(colorIndex: index),
-                      );
-                },
-                isNoColor: true,
-              );
-            }
 
             return _ColorCircle(
-              color: color,
-              isSelected: index == noteColor,
+              color: color ?? colorScheme.surface,
+              isSelected: isSelected,
+              isNoColor: color == null,
               onTap: () {
-                debugPrint('Tapped color option, index: $index');
-                final note = ref.read(notesProvider).firstWhere(
-                      (note) => note.id == noteId,
-                    );
                 ref.read(notesProvider.notifier).updateNote(
-                      noteId,
+                      widget.noteId,
                       note.copyWith(colorIndex: index),
                     );
               },
@@ -91,11 +126,7 @@ class _ColorCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Calculate the icon color based on background contrast
-    final Color iconColor = isNoColor
-        ? colorScheme.onSurface
-        : Color.lerp(Colors.white, Colors.black, color.computeLuminance())!
-            .withOpacity(0.9);
+    final sizeConstants = UIConstants.of(context);
 
     return Material(
       type: MaterialType.transparency,
@@ -103,34 +134,30 @@ class _ColorCircle extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: Container(
-          width: 64,
-          height: 64,
-          margin: const EdgeInsets.all(4),
+          width: sizeConstants.colorItemSize,
+          height: sizeConstants.colorItemSize,
+          margin: EdgeInsets.all(sizeConstants.colorItemMargin),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected
-                    ? iconColor
-                    : isNoColor
-                        ? colorScheme.outline
-                        : Colors.transparent,
-                width: 2,
+                color: isSelected ? colorScheme.primary : colorScheme.outline,
+                width: isSelected ? 3 : 1,
               ),
             ),
             child: isSelected
                 ? Icon(
                     Icons.check,
-                    color: iconColor,
-                    size: 24,
+                    color: colorScheme.primary,
+                    size: sizeConstants.colorIconSize,
                   )
                 : isNoColor
                     ? Icon(
                         Icons.format_color_reset,
                         color: colorScheme.outline,
-                        size: 24,
+                        size: sizeConstants.colorIconSize,
                       )
                     : null,
           ),

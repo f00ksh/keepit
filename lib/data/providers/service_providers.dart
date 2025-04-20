@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/supabase_stoarge_service.dart';
 import '../services/sync_service.dart';
 import '../repositories/note_repository_impl.dart';
+// import 'package:keepit/core/services/image_cache_manager.dart';
 
 part 'service_providers.g.dart';
 
@@ -35,3 +36,8 @@ NoteRepositoryImpl noteRepository(ref) {
 AuthServiceRepository authService(ref) {
   throw UnimplementedError('Should be overridden in main');
 }
+
+// @Riverpod(keepAlive: true)
+// ImageCacheManager imageCacheManager(ref) {
+//   return ImageCacheManager();
+// }
