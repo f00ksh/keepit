@@ -128,7 +128,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     opacity: 0.65,
                     duration: const Duration(milliseconds: 200),
                     child: Container(
-                      color: Colors.black,
+                      color: Colors.black.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -139,8 +139,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final body = AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor:
-            isExpanded ? Colors.black.withOpacity(0.65) : Colors.transparent,
+        statusBarColor: isExpanded
+            ? Colors.black.withValues(alpha: 0.65)
+            : Colors.transparent,
       ),
       child: Stack(
         children: [

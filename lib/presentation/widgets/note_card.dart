@@ -54,7 +54,10 @@ class NoteCard extends StatelessWidget {
                 (note.colorIndex == AppTheme.noColorIndex ||
                     noteColor == Theme.of(context).colorScheme.surface))
             ? BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.3))
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.3))
             : BorderSide.none,
       ),
       child: InkWell(
@@ -82,8 +85,13 @@ class NoteCard extends StatelessWidget {
                       note.colorIndex != AppTheme.noColorIndex)
                     Row(
                       children: [
-                        NoteLabelsSection(note: note),
-                        if (note.colorIndex != AppTheme.noColorIndex)
+                        NoteLabelsSection(
+                          note: note,
+                          onTap: onTap,
+                          maxLabelsToShow: 2,
+                        ),
+                        if (note.wallpaperIndex != 0 &&
+                            note.colorIndex != AppTheme.noColorIndex)
                           Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 2.0),
@@ -162,10 +170,9 @@ class NoteCard extends StatelessWidget {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 18,
-                      color:
-                          Theme.of(context).colorScheme.onSurface.withOpacity(
-                                todo.isDone ? 0.7 : 1,
-                              ),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                            alpha: todo.isDone ? 0.7 : 1,
+                          ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -179,7 +186,7 @@ class NoteCard extends StatelessWidget {
                               ? Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.7)
+                                  .withValues(alpha: 0.7)
                               : null,
                         ),
                         maxLines: 2,
@@ -191,13 +198,13 @@ class NoteCard extends StatelessWidget {
               )),
           if (note.todos.length > 6) ...[
             const SizedBox(height: 8),
-            Text(
-              '${note.todos.length - 6} more tasks',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                '${note.todos.length - 6} more tasks',
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ],
       ],

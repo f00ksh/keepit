@@ -96,7 +96,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       shape: CircleBorder(
         side: isColorItem
             ? BorderSide(
-                color: colorScheme.onSecondaryContainer.withOpacity(0.5),
+                color: colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
                 width: _screenWidth * 0.002,
               )
             : BorderSide.none,
@@ -231,7 +231,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               backgroundColor: Theme.of(context)
                   .colorScheme
                   .secondaryContainer
-                  .withOpacity(.5),
+                  .withValues(alpha: .5),
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),

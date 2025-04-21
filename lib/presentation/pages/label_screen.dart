@@ -176,7 +176,8 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
                   decoration: InputDecoration(
                     hintText: 'Create new label',
                     hintStyle: textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                     prefixIcon: IconButton(
                       icon: const Icon(Icons.clear),

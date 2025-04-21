@@ -45,7 +45,7 @@ class AppTextStyles {
   // Note Card Content
   static TextStyle notecardContentStyle(BuildContext context) =>
       context.textTheme.bodyMedium!.copyWith(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
       );
 
   // Section title styles
@@ -59,6 +59,6 @@ class AppTextStyles {
   // Empty state message style
   static TextStyle emptyStateStyle(BuildContext context) =>
       context.textTheme.bodyMedium!.copyWith(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       );
 }

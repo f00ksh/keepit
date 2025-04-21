@@ -30,6 +30,9 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   String _localContent = '';
   bool _hasFocus = false;
 
+  // Add debounce timer to reduce frequent updates
+  bool _contentChanged = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,12 +43,14 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   }
 
   void _onFocusChange() {
+    final hadFocus = _hasFocus;
     setState(() {
       _hasFocus = _focusNode.hasFocus;
     });
 
-    // Always save content when focus is lost
-    if (!_focusNode.hasFocus && _localContent != widget.todo.content) {
+    // Only save content when focus is lost and content has changed
+    if (hadFocus && !_focusNode.hasFocus && _contentChanged) {
+      _contentChanged = false;
       widget.onContentChanged(_localContent.trim());
     }
   }
@@ -53,8 +58,11 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   @override
   void didUpdateWidget(TodoItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only update controller if content changed externally
     if (oldWidget.todo.content != widget.todo.content &&
-        widget.todo.content != _localContent) {
+        widget.todo.content != _localContent &&
+        !_hasFocus) {
+      // Don't update while editing
       _localContent = widget.todo.content;
       _controller.text = _localContent;
     }
@@ -63,7 +71,7 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   @override
   void dispose() {
     // Save content if it has changed before disposing
-    if (_localContent != widget.todo.content) {
+    if (_contentChanged) {
       widget.onContentChanged(_localContent.trim());
     }
     _focusNode.removeListener(_onFocusChange);
@@ -75,8 +83,9 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDone = widget.todo.isDone;
 
-    // Following Material 3 card with subtle elevation
+    // Use const for unchanging widgets
     return Card(
       elevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -84,13 +93,12 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: _hasFocus
-            ? BorderSide(color: colorScheme.primary.withOpacity(0.3), width: 1)
+            ? BorderSide(
+                color: colorScheme.primary.withValues(alpha: 0.3), width: 1)
             : BorderSide.none,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 4.0,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -108,12 +116,12 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
               ),
             ),
 
-            // Material 3 checkbox with animation
+            // Checkbox
             SizedBox(
               height: 48,
               child: Center(
                 child: Checkbox(
-                  value: widget.todo.isDone,
+                  value: isDone,
                   onChanged: widget.onCheckboxChanged,
                   activeColor: colorScheme.primary,
                   shape: RoundedRectangleBorder(
@@ -123,7 +131,7 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
               ),
             ),
 
-            // Expanded text field with material styling
+            // Text field
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -136,43 +144,39 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 4),
                     hintText: 'Add task...',
                     hintStyle: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.5),
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
                       fontSize: 16,
                     ),
                   ),
                   style: TextStyle(
                     fontSize: 16,
-                    decoration:
-                        widget.todo.isDone ? TextDecoration.lineThrough : null,
-                    color: widget.todo.isDone
-                        ? colorScheme.onSurface.withOpacity(0.6)
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    color: isDone
+                        ? colorScheme.onSurface.withValues(alpha: 0.6)
                         : colorScheme.onSurface,
                   ),
                   onChanged: (value) {
                     _localContent = value;
-                    // Save immediately on change
-                    widget.onContentChanged(value.trim());
+                    _contentChanged = true;
+                    // Don't save on every keystroke - wait for focus loss or submission
                   },
                   onSubmitted: (value) {
                     _localContent = value;
+                    _contentChanged = false;
                     widget.onContentChanged(value.trim());
                     _focusNode.requestFocus();
-                  },
-                  // Add editing complete handler
-                  onEditingComplete: () {
-                    widget.onContentChanged(_localContent.trim());
                   },
                 ),
               ),
             ),
 
-            // Delete button with improved animation
+            // Delete button
             IconButton(
               visualDensity: VisualDensity.compact,
               icon: Icon(
                 Icons.close,
                 size: 18,
-                color: colorScheme.onSurface.withOpacity(0.7),
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               onPressed: widget.onDelete,
               tooltip: 'Delete task',

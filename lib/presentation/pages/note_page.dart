@@ -145,7 +145,6 @@ class _NotePageState extends ConsumerState<NotePage> {
               children: [
                 NoteLabelsSection(
                   note: note,
-                  isEditable: true,
                 ),
                 // Show color indicator when note has wallpaper and color
                 if (note.wallpaperIndex != 0 &&
@@ -360,8 +359,8 @@ class _NotePageState extends ConsumerState<NotePage> {
           final colorScheme = Theme.of(context).colorScheme;
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final handleColor = isDark
-              ? colorScheme.onSurface.withOpacity(0.4)
-              : colorScheme.onSurfaceVariant.withOpacity(0.4);
+              ? colorScheme.onSurface.withValues(alpha: 0.4)
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
 
           return Container(
             decoration: BoxDecoration(

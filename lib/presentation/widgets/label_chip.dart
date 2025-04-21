@@ -1,27 +1,19 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/labels_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import '../../domain/models/label.dart';
-import '../../core/theme/app_theme.dart';
 
 class LabelChip extends StatelessWidget {
   final Label? label;
   final int? noteColorIndex;
   final int? wallpaperIndex;
-  final bool isSelected;
-  final bool removable;
   final VoidCallback? onTap;
-  final VoidCallback? onRemove;
 
   const LabelChip({
     super.key,
     required this.label,
-    this.isSelected = false,
-    this.removable = false,
     this.onTap,
-    this.onRemove,
     this.noteColorIndex,
     this.wallpaperIndex,
   });
@@ -31,71 +23,28 @@ class LabelChip extends StatelessWidget {
     if (label == null) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.labelMedium;
 
-    // Prioritize wallpaper color over note color
-    Color? baseColor;
-    if (wallpaperIndex != 0 && wallpaperIndex != AppTheme.noWallpaperIndex) {
-      // Use wallpaper color if available
-      baseColor = getNoteWallpaperColor(context, wallpaperIndex!);
-    } else {
-      // Fallback to note color
-      baseColor =
-          getNoteColor(context, noteColorIndex ?? AppTheme.noColorIndex);
-    }
+    // Use semi-transparent colors to show what's behind
+    final backgroundColor =
+        colorScheme.surfaceContainer.withValues(alpha: 0.65);
 
-    // Surface colors from MD3 design system
-    final surfaceColor = baseColor ?? colorScheme.surface;
-
-    // Calculate a tonal variation for the surface container
-    final surfaceContainerColor = Color.alphaBlend(
-      colorScheme.onSurface.withOpacity(0.08),
-      surfaceColor,
-    );
-
-    // Determine text and icon colors - adjust for wallpaper colors that might need higher contrast
-    final isBrightColor = surfaceColor.computeLuminance() > 0.5;
-    final textColor =
-        isBrightColor ? colorScheme.onSurface : Colors.white.withOpacity(0.9);
-
-    final borderColor = Color.alphaBlend(
-        colorScheme.primary.withOpacity(0.2), surfaceContainerColor);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: removable ? onTap : null,
+    // Use RepaintBoundary to isolate repaints
+    return RepaintBoundary(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: backgroundColor,
               borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? surfaceContainerColor.withOpacity(0.9)
-                      : surfaceContainerColor.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? colorScheme.primary : borderColor,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label!.name,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: isSelected ? colorScheme.primary : textColor,
-                            fontWeight: isSelected ? FontWeight.w500 : null,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+            ),
+            child: Text(
+              label!.name,
+              style: textStyle,
             ),
           ),
         ),
@@ -106,41 +55,79 @@ class LabelChip extends StatelessWidget {
 
 class NoteLabelsSection extends ConsumerWidget {
   final Note note;
-  final bool isEditable;
+  final VoidCallback? onTap;
+  final int? maxLabelsToShow;
 
   const NoteLabelsSection({
     super.key,
     required this.note,
-    this.isEditable = false,
+    this.onTap,
+    this.maxLabelsToShow,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (note.labelIds.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(
-      spacing: 2,
-      runSpacing: 2,
-      children: note.labelIds.map((labelId) {
-        return LabelChip(
-          noteColorIndex: note.colorIndex,
-          wallpaperIndex: note.wallpaperIndex,
-          label: ref.watch(labelByIdProvider(labelId)),
-          isSelected: false,
-          removable: false,
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/labels',
-              arguments: {
-                'noteId': note.id,
-                'selectedLabelIds': note.labelIds,
-              },
+    final labelIds = note.labelIds;
+    final visibleLabelIds = maxLabelsToShow != null
+        ? labelIds.take(maxLabelsToShow!).toList()
+        : labelIds.toList();
+    final remainingCount = labelIds.length - visibleLabelIds.length;
+
+    // Fixed: Removed the Expanded widget that was causing the error
+    return RepaintBoundary(
+      child: Wrap(
+        spacing: 3,
+        runSpacing: 3,
+        children: [
+          ...visibleLabelIds.map((labelId) {
+            final label = ref.watch(labelByIdProvider(labelId));
+            // Skip rendering if label is null
+            if (label == null) return const SizedBox.shrink();
+
+            return LabelChip(
+              noteColorIndex: note.colorIndex,
+              wallpaperIndex: note.wallpaperIndex,
+              label: label,
+              onTap: onTap,
             );
-          },
-          onRemove: null,
-        );
-      }).toList(),
+          }),
+
+          // Show the "+X" chip if there are more labels
+          if (remainingCount > 0)
+            _buildRemainingCountChip(context, remainingCount),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemainingCountChip(BuildContext context, int count) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.labelMedium;
+
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 1.0),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainer.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '+$count',
+                style: textStyle,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
