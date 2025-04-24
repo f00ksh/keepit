@@ -115,6 +115,7 @@ class NoteCard extends StatelessWidget {
       return Hero(
         tag: heroTag,
         child: Dismissible(
+          direction: DismissDirection.endToStart,
           key: ValueKey('dismiss_${note.id}'),
           onDismissed: onDismissed,
           child: cardContent,
@@ -160,15 +161,15 @@ class NoteCard extends StatelessWidget {
             ),
           ),
         if (note.todos.isNotEmpty) ...[
-          ...note.todos.take(6).map((todo) => Padding(
+          ...note.todos.take(10).map((todo) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       todo.isDone
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
+                          ? Icons.check_box_outlined
+                          : Icons.check_box_outline_blank_rounded,
                       size: 18,
                       color: Theme.of(context).colorScheme.onSurface.withValues(
                             alpha: todo.isDone ? 0.7 : 1,
@@ -189,7 +190,7 @@ class NoteCard extends StatelessWidget {
                                   .withValues(alpha: 0.7)
                               : null,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

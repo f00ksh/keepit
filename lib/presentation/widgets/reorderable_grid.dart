@@ -15,13 +15,56 @@ class ReorderableGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notes = ref.watch(mainNotesProvider);
+    // Use select to only watch the notes we need
+    final notes = ref.watch(mainNotesProvider.select((notes) => notes));
+
+    // Separate pinned and unpinned notes
+    final pinnedNotes = notes.where((note) => note.isPinned).toList();
+    final unpinnedNotes = notes.where((note) => !note.isPinned).toList();
+
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount =
         screenWidth < 600 ? 2 : max(3, (screenWidth / 200).floor());
 
-    return SliverToBoxAdapter(
-        child: DragMasonryGrid(
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        // Only show pinned section if there are pinned notes
+        if (pinnedNotes.isNotEmpty) ...[
+          // Pinned section header
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 4.0),
+            child: Text(
+              'Pinned',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          // Pinned notes grid
+          _buildGrid(context, ref, pinnedNotes, crossAxisCount, true),
+        ],
+
+        // Only show unpinned section header if there are pinned notes
+        if (pinnedNotes.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
+            child: Text(
+              'All',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+
+        // Unpinned notes grid
+        _buildGrid(context, ref, unpinnedNotes, crossAxisCount, false),
+      ]),
+    );
+  }
+
+  Widget _buildGrid(BuildContext context, WidgetRef ref, List<Note> notes,
+      int crossAxisCount, bool isPinned) {
+    return DragMasonryGrid(
       dragCallbacks: DragCallbacks(
         onAccept: (moveData, data, isFront, {acceptDetails}) {
           if (moveData == null || acceptDetails == null) return;
@@ -29,18 +72,40 @@ class ReorderableGrid extends ConsumerWidget {
           final newIndex = acceptDetails.newIndex;
 
           if (oldIndex != newIndex) {
-            final updatedNotes = List<Note>.from(notes);
-            final item = updatedNotes.removeAt(oldIndex);
+            // Get all main notes to ensure we update both sections properly
+            final allNotes = ref.read(mainNotesProvider);
+            final pinnedNotes =
+                allNotes.where((note) => note.isPinned).toList();
+            final unpinnedNotes =
+                allNotes.where((note) => !note.isPinned).toList();
 
-            updatedNotes.insert(newIndex, item);
+            // Update the specific section being reordered
+            final updatedSectionNotes = List<Note>.from(notes);
+            final item = updatedSectionNotes.removeAt(oldIndex);
+            updatedSectionNotes.insert(newIndex, item);
 
-            // Update indices and persist changes directly
-            final notesToUpdate = updatedNotes.asMap().entries.map((entry) {
+            // Create a list to hold all notes that need updating
+            final List<Note> notesToUpdate = [];
+
+            // Update indices for the section being reordered
+            notesToUpdate
+                .addAll(updatedSectionNotes.asMap().entries.map((entry) {
               return entry.value.copyWith(
                 index: entry.key,
+                isPinned: isPinned, // Ensure pinned status is maintained
               );
-            }).toList();
+            }));
 
+            // Add the other section's notes without changing their indices
+            if (isPinned) {
+              // We're reordering pinned notes, so add unpinned notes unchanged
+              notesToUpdate.addAll(unpinnedNotes);
+            } else {
+              // We're reordering unpinned notes, so add pinned notes unchanged
+              notesToUpdate.addAll(pinnedNotes);
+            }
+
+            // Update all notes at once
             ref.read(notesProvider.notifier).updateBatchNotes(notesToUpdate);
           }
         },
@@ -107,6 +172,6 @@ class ReorderableGrid extends ConsumerWidget {
           );
         },
       ).toList(),
-    ));
+    );
   }
 }

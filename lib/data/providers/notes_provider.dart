@@ -379,6 +379,7 @@ class Notes extends _$Notes {
 /// Provider for a single note by ID, automatically updates when the note changes
 @riverpod
 Note singleNote(ref, String noteId, NoteType? noteType) {
+  debugPrint('provider called');
   final allNotes = ref.watch(notesProvider);
   return allNotes.firstWhere(
     (note) => note.id == noteId,

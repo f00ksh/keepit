@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
+import 'package:keepit/presentation/providers/note_action_provider.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
 import 'package:keepit/presentation/widgets/note_page/note_todos_section.dart';
@@ -43,10 +45,21 @@ class _NotePageState extends ConsumerState<NotePage> {
     _heroTag = widget.heroTag;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize text controllers
       final note = ref.read(singleNoteProvider(
           widget.noteId, widget.initialNoteType ?? NoteType.text));
-      _titleController.text = note.title;
-      _contentController.text = note.content;
+      // Check if mounted before accessing controllers
+      if (mounted) {
+        _titleController.text = note.title;
+        _contentController.text = note.content;
+      }
+
+      // Update hero tag only once after the first frame if needed
+      if (mounted && _heroTag == widget.heroTag) {
+        setState(() {
+          _heroTag = 'note_${widget.noteId}';
+        });
+      }
     });
   }
 
@@ -59,7 +72,10 @@ class _NotePageState extends ConsumerState<NotePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Directly watch the specific note - will automatically rebuild when note changes
+    if (kDebugMode) {
+      debugPrint(
+          'NotePage build triggered at ${DateTime.now()} for noteId: ${widget.noteId}');
+    }
     final note = ref.watch(singleNoteProvider(
         widget.noteId, widget.initialNoteType ?? NoteType.text));
 
@@ -81,10 +97,10 @@ class _NotePageState extends ConsumerState<NotePage> {
     return PopScope(
       onPopInvokedWithResult: _handlePop,
       child: Hero(
-        tag: _heroTag,
+        tag: _heroTag, // Use the state variable _heroTag directly
         child: Builder(
           builder: (context) {
-            _updateHeroTag();
+            // _updateHeroTag(); // REMOVE this call from here
             return Scaffold(
               backgroundColor: Colors.transparent, // Make scaffold transparent
               body: Container(
@@ -137,7 +153,9 @@ class _NotePageState extends ConsumerState<NotePage> {
           if (widget.initialNoteType == NoteType.todo || note.todos.isNotEmpty)
             NoteTodosSection(
               note: note,
-              onChanged: () => _hasChanges = true,
+              onChanged: () {
+                _hasChanges = true;
+              },
             ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 14),
@@ -170,7 +188,9 @@ class _NotePageState extends ConsumerState<NotePage> {
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       style: AppTextStyles.noteTitleStyle(context),
-      onChanged: (_) => _hasChanges = true,
+      onChanged: (_) {
+        _hasChanges = true;
+      },
     );
   }
 
@@ -186,11 +206,13 @@ class _NotePageState extends ConsumerState<NotePage> {
       maxLines: null,
       keyboardType: TextInputType.multiline,
       textCapitalization: TextCapitalization.sentences,
-      onChanged: (_) => _hasChanges = true,
+      onChanged: (_) {
+        _hasChanges = true;
+      },
     );
   }
 
-  // Replace _buildAppBar with a custom widget that works with the Stack
+  // Replace _buildCustomAppBar with a custom widget that works with the Stack
   Widget _buildCustomAppBar(Note note) {
     return Container(
       height: kToolbarHeight + MediaQuery.of(context).padding.top,
@@ -212,13 +234,36 @@ class _NotePageState extends ConsumerState<NotePage> {
                 IconButton(
                   icon: Icon(
                       note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                  onPressed: () => _updateNote(note, isPinned: !note.isPinned),
+                  onPressed: () {
+                    // Store action in state provider and navigate back
+                    ref
+                        .read(noteActionNotifierProvider.notifier)
+                        .updateNoteAction(
+                          NoteAction(
+                            noteId: note.id,
+                            isPinned: !note.isPinned,
+                          ),
+                        );
+
+                    Navigator.pop(context);
+                  },
                 ),
                 IconButton(
                   icon: Icon(
                       note.isFavorite ? Icons.favorite : Icons.favorite_border),
-                  onPressed: () =>
-                      _updateNote(note, isFavorite: !note.isFavorite),
+                  onPressed: () {
+                    // Store action in state provider and navigate back
+                    ref
+                        .read(noteActionNotifierProvider.notifier)
+                        .updateNoteAction(
+                          NoteAction(
+                            noteId: note.id,
+                            isFavorite: !note.isFavorite,
+                          ),
+                        );
+
+                    Navigator.pop(context);
+                  },
                 ),
                 if (!note.isDeleted)
                   IconButton(
@@ -238,7 +283,16 @@ class _NotePageState extends ConsumerState<NotePage> {
                   IconButton(
                     icon: const Icon(Icons.restore),
                     onPressed: () {
-                      _updateNote(note, isDeleted: false);
+                      // Store action in state provider and navigate back
+                      ref
+                          .read(noteActionNotifierProvider.notifier)
+                          .updateNoteAction(
+                            NoteAction(
+                              noteId: note.id,
+                              isDeleted: false,
+                            ),
+                          );
+
                       Navigator.pop(context);
                     },
                   ),
@@ -247,7 +301,16 @@ class _NotePageState extends ConsumerState<NotePage> {
                   IconButton(
                     icon: const Icon(Icons.unarchive),
                     onPressed: () {
-                      _updateNote(note, isArchived: false);
+                      // Store action in state provider and navigate back
+                      ref
+                          .read(noteActionNotifierProvider.notifier)
+                          .updateNoteAction(
+                            NoteAction(
+                              noteId: note.id,
+                              isArchived: false,
+                            ),
+                          );
+
                       Navigator.pop(context);
                     },
                   ),
@@ -259,31 +322,8 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
-  void _updateNote(
-    Note note, {
-    bool? isPinned,
-    bool? isFavorite,
-    bool? isArchived,
-    bool? isDeleted,
-  }) {
-    ref.read(notesProvider.notifier).updateNoteStatus(
-          note.id,
-          isPinned: isPinned,
-          isFavorite: isFavorite,
-          isArchived: isArchived,
-          isDeleted: isDeleted,
-        );
-  }
-
-  void _updateHeroTag() {
-    if (_heroTag == widget.heroTag) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _heroTag = 'note_${widget.noteId}';
-        });
-      });
-    }
-  }
+  // Remove this method as we'll use _handlePop instead
+  // void _updateNote(...) { ... }
 
   Future<void> _handlePop(bool didPop, dynamic result) async {
     if (!mounted) return;
@@ -291,6 +331,28 @@ class _NotePageState extends ConsumerState<NotePage> {
     final notesNotifier = ref.read(notesProvider.notifier);
     final note = notesNotifier.getNote(widget.noteId);
     if (note == null) return;
+
+    // Check if there's a pending note action
+    final noteAction = ref.read(noteActionNotifierProvider);
+    if (noteAction != null && noteAction.noteId == widget.noteId) {
+      // Clear the action to prevent it from being processed again
+      ref.read(noteActionNotifierProvider.notifier).updateNoteAction(null);
+
+      // Process the action after a short delay to allow hero animation to complete
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+
+      await notesNotifier.updateNoteStatus(
+        noteAction.noteId,
+        isPinned: noteAction.isPinned,
+        isFavorite: noteAction.isFavorite,
+        isArchived: noteAction.isArchived,
+        isDeleted: noteAction.isDeleted,
+      );
+
+      // Return early since we've processed an action
+      return;
+    }
 
     // Check if note is empty including the case of single empty todo
     final isEmpty = _isNoteEmpty(note);
@@ -307,7 +369,6 @@ class _NotePageState extends ConsumerState<NotePage> {
       notesNotifier.updateNote(widget.noteId, updatedNote);
       _hasChanges = false;
     }
-
     if (isEmpty) {
       await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
@@ -390,7 +451,15 @@ class _NotePageState extends ConsumerState<NotePage> {
                     leading: const Icon(Icons.archive_outlined),
                     title: const Text('Archive'),
                     onTap: () {
-                      _updateNote(currentNote, isArchived: true);
+                      // Store action in state provider and navigate back
+                      ref
+                          .read(noteActionNotifierProvider.notifier)
+                          .updateNoteAction(NoteAction(
+                            noteId: currentNote.id,
+                            isArchived: true,
+                          ));
+
+                      Navigator.pop(context);
                       Navigator.pop(context);
                     },
                   ),
@@ -399,19 +468,23 @@ class _NotePageState extends ConsumerState<NotePage> {
                     title: const Text('Delete'),
                     onTap: () async {
                       ScaffoldMessenger.of(context).clearSnackBars();
-
                       final messenger = ScaffoldMessenger.of(context);
-                      final notesNotifier = ref.read(notesProvider.notifier);
+
+                      // Store action in state provider and navigate back
+                      ref
+                          .read(noteActionNotifierProvider.notifier)
+                          .updateNoteAction(
+                            NoteAction(
+                              noteId: currentNote.id,
+                              isDeleted: true,
+                            ),
+                          );
 
                       Navigator.pop(context);
                       Navigator.pop(context);
 
+                      // Show snackbar after a delay to allow hero animation to complete
                       await Future.delayed(const Duration(milliseconds: 300));
-
-                      await notesNotifier.updateNoteStatus(
-                        currentNote.id,
-                        isDeleted: true,
-                      );
 
                       messenger.showSnackBar(
                         SnackBar(
@@ -419,10 +492,12 @@ class _NotePageState extends ConsumerState<NotePage> {
                           action: SnackBarAction(
                             label: 'Undo',
                             onPressed: () async {
-                              await notesNotifier.updateNoteStatus(
-                                currentNote.id,
-                                isDeleted: false,
-                              );
+                              await ref
+                                  .read(notesProvider.notifier)
+                                  .updateNoteStatus(
+                                    currentNote.id,
+                                    isDeleted: false,
+                                  );
                               messenger.clearSnackBars();
                             },
                           ),
@@ -527,6 +602,7 @@ class _NotePageState extends ConsumerState<NotePage> {
                 SizedBox(
                   height: 100, // Fixed height for color picker
                   child: ColorPickerContent(
+                    // Note: Changes inside this widget also trigger provider updates
                     noteId: widget.noteId,
                     initialColorIndex: currentNote.colorIndex,
                   ),
@@ -552,6 +628,7 @@ class _NotePageState extends ConsumerState<NotePage> {
                 SizedBox(
                   height: 100, // Reduced height for wallpaper picker
                   child: WallpaperPickerContent(
+                    // Note: Changes inside this widget also trigger provider updates
                     noteId: widget.noteId,
                     initialWallpaperIndex: currentNote.wallpaperIndex,
                   ),

@@ -29,8 +29,6 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
   late FocusNode _focusNode;
   String _localContent = '';
   bool _hasFocus = false;
-
-  // Add debounce timer to reduce frequent updates
   bool _contentChanged = false;
 
   @override
@@ -80,108 +78,134 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
     super.dispose();
   }
 
+  void _unfocusAndSave() {
+    if (_hasFocus) {
+      // Save any changes before unfocusing
+      if (_contentChanged) {
+        _contentChanged = false;
+        widget.onContentChanged(_localContent.trim());
+      }
+      // Unfocus the text field
+      _focusNode.unfocus();
+      // Ensure the unfocus is processed immediately
+      FocusScope.of(context).unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDone = widget.todo.isDone;
 
-    // Use const for unchanging widgets
-    return Card(
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: _hasFocus
-            ? BorderSide(
-                color: colorScheme.primary.withValues(alpha: 0.3), width: 1)
-            : BorderSide.none,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Drag handle with improved animation
-            ReorderableDragStartListener(
-              index: widget.index,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _hasFocus ? 0.8 : 0.3,
-                child: Icon(
-                  Icons.drag_indicator,
-                  size: 22,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-
-            // Checkbox
-            SizedBox(
-              height: 48,
-              child: Center(
-                child: Checkbox(
-                  value: isDone,
-                  onChanged: widget.onCheckboxChanged,
-                  activeColor: colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+    return NotificationListener<DraggableScrollableNotification>(
+      onNotification: (notification) {
+        // Unfocus when any drag starts in the parent ReorderableListView
+        _unfocusAndSave();
+        return false; // Allow the notification to continue
+      },
+      child: Card(
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        color: Colors.transparent,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: _hasFocus
+              ? BorderSide(
+                  color: colorScheme.primary.withValues(alpha: .9),
+                  width: 2,
+                )
+              : BorderSide.none,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Drag handle
+              ReorderableDragStartListener(
+                index: widget.index,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: 22,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.8),
                   ),
                 ),
               ),
-            ),
 
-            // Text field
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                    hintText: 'Add task...',
-                    hintStyle: TextStyle(
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontSize: 16,
+              // Checkbox
+              SizedBox(
+                height: 48,
+                width: 40, // Fixed width for better layout stability
+                child: Center(
+                  child: Checkbox(
+                    value: isDone,
+                    onChanged: (checked) {
+                      _unfocusAndSave();
+                      widget.onCheckboxChanged(checked);
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  style: TextStyle(
-                    fontSize: 16,
-                    decoration: isDone ? TextDecoration.lineThrough : null,
-                    color: isDone
-                        ? colorScheme.onSurface.withValues(alpha: 0.6)
-                        : colorScheme.onSurface,
-                  ),
-                  onChanged: (value) {
-                    _localContent = value;
-                    _contentChanged = true;
-                    // Don't save on every keystroke - wait for focus loss or submission
-                  },
-                  onSubmitted: (value) {
-                    _localContent = value;
-                    _contentChanged = false;
-                    widget.onContentChanged(value.trim());
-                    _focusNode.requestFocus();
-                  },
                 ),
               ),
-            ),
 
-            // Delete button
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: Icon(
-                Icons.close,
-                size: 18,
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              // Text field
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                      hintText: 'Add task...',
+                      hintStyle: TextStyle(
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                    ),
+                    onChanged: (value) {
+                      _localContent = value;
+                      _contentChanged = true;
+                    },
+                    onSubmitted: (value) {
+                      _localContent = value;
+                      _contentChanged = false;
+                      widget.onContentChanged(value.trim());
+                      _focusNode.requestFocus();
+                    },
+                  ),
+                ),
               ),
-              onPressed: widget.onDelete,
-              tooltip: 'Delete task',
-            )
-          ],
+
+              // Delete button - only show when focused
+              if (_hasFocus)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                  ),
+                  onPressed: () {
+                    _unfocusAndSave();
+                    widget.onDelete();
+                  },
+                  tooltip: 'Delete task',
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
-import 'dart:developer' as developer;
 part 'todo_item.g.dart';
 
 // Add HiveType annotation
@@ -25,12 +24,7 @@ class TodoItem {
     required this.content,
     this.isDone = false,
     required this.index,
-  }) : id = id ?? const Uuid().v4() {
-    // Debug print when creating a todo item
-    developer.log(
-        'Creating TodoItem: id=$id, content=$content, isDone=$isDone, index=$index',
-        name: 'TodoItem');
-  }
+  }) : id = id ?? const Uuid().v4();
 
   // For JSON serialization
   Map<String, dynamic> toJson() {
@@ -40,15 +34,12 @@ class TodoItem {
       'isDone': isDone,
       'index': index,
     };
-    // Debug: log JSON serialization
-    developer.log('TodoItem.toJson: $json', name: 'TodoItem');
+
     return json;
   }
 
   // For JSON deserialization
   factory TodoItem.fromJson(Map<String, dynamic> json) {
-    // Debug: log JSON deserialization
-    developer.log('TodoItem.fromJson: $json', name: 'TodoItem');
     return TodoItem(
       id: json['id'] as String,
       content: json['content'] as String,
