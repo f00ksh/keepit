@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -7,7 +8,7 @@ part 'initial_theme_provider.g.dart';
 /// A provider that loads the theme mode synchronously from Hive storage
 /// This is used to set the initial theme before the main settings finish loading
 @riverpod
-ThemeMode? initialThemeMode(ref) {
+ThemeMode? initialThemeMode(Ref ref) {
   try {
     // Try to open the settings box synchronously
     final settingsBox = Hive.box('settings');

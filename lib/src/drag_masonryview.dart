@@ -124,7 +124,7 @@ class _DragMasonryGridState extends State<DragMasonryGrid> {
             itemBuilder: (context, index) {
               // Wrap each child in an AnimatedContainer
               return AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
+                duration: const Duration(milliseconds: 300),
                 child: children[index],
               );
             },

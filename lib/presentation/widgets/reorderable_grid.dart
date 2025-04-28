@@ -5,6 +5,7 @@ import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
+import 'package:keepit/presentation/providers/multi_select_provider.dart';
 import 'package:keepit/presentation/widgets/note_card.dart';
 import 'package:keepit/src/drag_callbacks.dart';
 import 'package:keepit/src/drag_masonryview.dart';
@@ -17,6 +18,10 @@ class ReorderableGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Use select to only watch the notes we need
     final notes = ref.watch(mainNotesProvider.select((notes) => notes));
+
+    // Track position changes
+    bool positionChanged = false;
+    bool leftPosition = false;
 
     // Separate pinned and unpinned notes
     final pinnedNotes = notes.where((note) => note.isPinned).toList();
@@ -32,16 +37,15 @@ class ReorderableGrid extends ConsumerWidget {
         if (pinnedNotes.isNotEmpty) ...[
           // Pinned section header
           Padding(
-            padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 4.0),
+            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
             child: Text(
               'Pinned',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           // Pinned notes grid
-          _buildGrid(context, ref, pinnedNotes, crossAxisCount, true),
+          _buildGrid(context, ref, pinnedNotes, crossAxisCount, true,
+              positionChanged, leftPosition),
         ],
 
         // Only show unpinned section header if there are pinned notes
@@ -50,28 +54,38 @@ class ReorderableGrid extends ConsumerWidget {
             padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
             child: Text(
               'All',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
 
         // Unpinned notes grid
-        _buildGrid(context, ref, unpinnedNotes, crossAxisCount, false),
+        _buildGrid(
+            context, ref, unpinnedNotes, crossAxisCount, false, positionChanged)
       ]),
     );
   }
 
   Widget _buildGrid(BuildContext context, WidgetRef ref, List<Note> notes,
-      int crossAxisCount, bool isPinned) {
+      int crossAxisCount, bool isPinned,
+      [bool positionChanged = false, bool leftPosition = false]) {
     return DragMasonryGrid(
+      dragChildBoxDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Theme.of(context).colorScheme.primary,
+      ),
       dragCallbacks: DragCallbacks(
+        onLeave: (moveData, data, isFront) {
+          leftPosition = true;
+        },
         onAccept: (moveData, data, isFront, {acceptDetails}) {
           if (moveData == null || acceptDetails == null) return;
           final oldIndex = acceptDetails.oldIndex;
           final newIndex = acceptDetails.newIndex;
 
           if (oldIndex != newIndex) {
+            // Position has changed
+            positionChanged = true;
+
             // Get all main notes to ensure we update both sections properly
             final allNotes = ref.read(mainNotesProvider);
             final pinnedNotes =
@@ -109,26 +123,34 @@ class ReorderableGrid extends ConsumerWidget {
             ref.read(notesProvider.notifier).updateBatchNotes(notesToUpdate);
           }
         },
+        onDragEnd: (details, data) {
+          // Check if position changed or left position
+          if (positionChanged || leftPosition) {
+            // Position was changed, do something
+            return;
+          } else {
+            // Get the note ID from the key
+            final noteId = (data.key as ValueKey).value.toString();
+
+            // Toggle multi-select mode and select this note
+            final multiSelectNotifier =
+                ref.read(multiSelectNotifierProvider.notifier);
+            if (!ref.read(multiSelectNotifierProvider).isMultiSelectMode) {
+              multiSelectNotifier.toggleMultiSelectMode();
+            }
+            multiSelectNotifier.toggleNoteSelection(noteId);
+          }
+          // Reset the flag
+          positionChanged = false;
+        },
       ),
       edgeScrollSpeedMilliseconds: 300,
       edgeScroll: .3,
       isDragNotification: true,
       draggingWidgetOpacity: 0,
-      enableReordering: true,
+      enableReordering:
+          (!ref.read(multiSelectNotifierProvider).isMultiSelectMode),
       crossAxisCount: crossAxisCount,
-      buildFeedback: (listItem, data, size) {
-        return Material(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              width: 3,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          child: data,
-        );
-      },
       children: notes.asMap().entries.map(
         (entry) {
           final note = entry.value;
@@ -137,15 +159,29 @@ class ReorderableGrid extends ConsumerWidget {
             widget: NoteCard(
               note: note,
               onTap: () {
-                // Force close any existing snackbars
-                ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.note,
-                  arguments: note.id,
-                );
+                // Check if in multi-select mode
+                final multiSelectState = ref.read(multiSelectNotifierProvider);
+                if (multiSelectState.isMultiSelectMode) {
+                  // Toggle selection of this note
+                  ref
+                      .read(multiSelectNotifierProvider.notifier)
+                      .toggleNoteSelection(note.id);
+                } else {
+                  // Force close any existing snackbars
+                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.note,
+                    arguments: note.id,
+                  );
+                }
               },
-              enableDismiss: true,
+              isSelected: ref
+                  .watch(multiSelectNotifierProvider)
+                  .selectedNoteIds
+                  .contains(note.id),
+              enableDismiss:
+                  (!ref.read(multiSelectNotifierProvider).isMultiSelectMode),
               onDismissed: (direction) {
                 ref.read(notesProvider.notifier).updateNoteStatus(
                       note.id,

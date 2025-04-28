@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -65,7 +66,7 @@ class Labels extends _$Labels {
 
 // Provider to get a label by ID
 @riverpod
-Label? labelById(ref, String id) {
+Label? labelById(Ref ref, String id) {
   final labels = ref.watch(labelsProvider);
   final index = labels.indexWhere((label) => label.id == id);
   return index >= 0 ? labels[index] : null;
@@ -73,7 +74,7 @@ Label? labelById(ref, String id) {
 
 // Provider to filter notes by label ID
 @riverpod
-List<Note> notesByLabelId(ref, String labelId) {
+List<Note> notesByLabelId(Ref ref, String labelId) {
   final allNotes = ref.watch(notesProvider);
 
   return allNotes.where((Note note) {

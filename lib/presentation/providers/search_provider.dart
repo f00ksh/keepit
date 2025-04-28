@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
@@ -50,7 +51,7 @@ class SelectedSearchColor extends _$SelectedSearchColor {
 
 // Filtered notes provider
 @riverpod
-List<Note> searchFilteredNotes(ref) {
+List<Note> searchFilteredNotes(Ref ref) {
   final allNotes = ref.watch(notesProvider);
   final query = ref.watch(searchQueryProvider);
   final selectedLabels = ref.watch(selectedSearchLabelsProvider);

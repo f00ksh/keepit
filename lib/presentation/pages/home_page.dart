@@ -5,10 +5,13 @@ import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
 import 'package:keepit/presentation/providers/fab_provider.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
+import 'package:keepit/presentation/providers/multi_select_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
 import 'package:keepit/presentation/providers/selected_label_provider.dart';
 import 'package:keepit/presentation/widgets/app_drawer.dart';
 import 'package:keepit/presentation/widgets/expandable_fab.dart';
+import 'package:keepit/presentation/widgets/multi_select_app_bar.dart';
+
 import 'package:keepit/presentation/widgets/note_grid.dart';
 import 'package:keepit/presentation/widgets/reorderable_grid.dart';
 import 'package:keepit/presentation/widgets/search_bar.dart';
@@ -91,6 +94,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final multiSelectState = ref.watch(multiSelectNotifierProvider);
     final screenIndex = ref.watch(navigationProvider);
     final selectedLabel = ref.watch(selectedLabelProvider);
     final isExpanded = ref.watch(fabExpansionProvider);
@@ -148,7 +152,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              AppSearchBar(),
+              multiSelectState.isMultiSelectMode
+                  ? MultiSelectAppBar()
+                  : AppSearchBar(),
               notes.isEmpty
                   ? SliverEmptyState(
                       message: _getEmptyMessage(screenIndex),

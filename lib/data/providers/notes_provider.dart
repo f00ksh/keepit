@@ -1,11 +1,10 @@
-import 'dart:developer' as developer;
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/domain/models/todo_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/note.dart';
 import 'auth_provider.dart';
 import 'service_providers.dart';
-import 'package:flutter/foundation.dart';
 
 part 'notes_provider.g.dart';
 
@@ -20,15 +19,18 @@ class Notes extends _$Notes {
     return [];
   }
 
+  // Loads all notes from storage and updates state
   Future<void> _loadNotes() async {
     final notes = await ref.read(storageServiceProvider).getAllNotes();
     state = notes;
   }
 
+  // Gets a note by ID or returns null if not found
   Note? getNote(String id) {
     return state.firstWhereOrNull((note) => note.id == id);
   }
 
+  // Adds a new note to the state and storage
   Future<void> addNote(Note note) async {
     // If it's a todo note, add an initial empty todo
     final noteToAdd = note.noteType == NoteType.todo
@@ -45,10 +47,11 @@ class Notes extends _$Notes {
 
     await ref.read(storageServiceProvider).addNote(noteToAdd);
 
-    _syncWithCloud((service) => service.createNote(noteToAdd)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.createNote(noteToAdd))
+        .catchError((e) {});
   }
 
+  // Updates an existing note with new content
   Future<void> updateNote(String id, Note updatedNote) async {
     // First save to storage
     await ref.read(storageServiceProvider).updateNote(updatedNote);
@@ -62,6 +65,7 @@ class Notes extends _$Notes {
     await _syncWithCloud((service) => service.updateNote(updatedNote));
   }
 
+  // Updates note status flags (favorite, archived, deleted, pinned)
   Future<void> updateNoteStatus(
     String id, {
     bool? isFavorite,
@@ -87,20 +91,22 @@ class Notes extends _$Notes {
     state = currentNotes;
 
     await ref.read(storageServiceProvider).updateNote(updatedNote);
-    _syncWithCloud((service) => service.updateNote(updatedNote)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.updateNote(updatedNote))
+        .catchError((e) {});
   }
 
+  // Permanently deletes a note from storage and state
   Future<void> deletePermanently(String id) async {
     final currentNotes = List<Note>.from(state);
     currentNotes.removeWhere((note) => note.id == id);
     state = currentNotes;
 
     await ref.read(storageServiceProvider).deleteNote(id);
-    _syncWithCloud((service) => service.deleteNotePermanently(id)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.deleteNotePermanently(id))
+        .catchError((e) {});
   }
 
+  // Updates multiple notes at once, typically used for reordering
   Future<void> updateBatchNotes(List<Note> updates) async {
     if (updates.isEmpty) return;
 
@@ -110,10 +116,10 @@ class Notes extends _$Notes {
     await ref.read(storageServiceProvider).updateBatchNotes(updatedNotes);
     _syncWithCloud((service) =>
             Future.wait(updatedNotes.map((note) => service.updateNote(note))))
-        .catchError(
-            (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+        .catchError((e) {});
   }
 
+  // Syncs changes with cloud storage if user is logged in
   Future<void> _syncWithCloud(
       Future<void> Function(dynamic service) operation) async {
     final user = ref.read(authProvider).valueOrNull;
@@ -122,6 +128,7 @@ class Notes extends _$Notes {
     }
   }
 
+  // Updates the index property of notes based on their position in the list
   List<Note> _updateIndices(List<Note> notes) {
     return notes.asMap().entries.map((entry) {
       return entry.value.copyWith(
@@ -130,12 +137,12 @@ class Notes extends _$Notes {
     }).toList();
   }
 
+  // Adds a label to a note
   Future<void> addLabelToNote(String noteId, String labelId) async {
     final currentNotes = List<Note>.from(state);
     final index = currentNotes.indexWhere((note) => note.id == noteId);
 
     if (index == -1) {
-      debugPrint('NotesProvider: Note not found!');
       return;
     }
 
@@ -156,10 +163,11 @@ class Notes extends _$Notes {
 
     await ref.read(storageServiceProvider).updateNote(updatedNote);
 
-    _syncWithCloud((service) => service.updateNote(updatedNote)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.updateNote(updatedNote))
+        .catchError((e) {});
   }
 
+  // Removes a label from a note
   Future<void> removeLabelFromNote(String noteId, String labelId) async {
     final currentNotes = List<Note>.from(state);
     final index = currentNotes.indexWhere((note) => note.id == noteId);
@@ -179,10 +187,11 @@ class Notes extends _$Notes {
     state = currentNotes;
 
     await ref.read(storageServiceProvider).updateNote(updatedNote);
-    _syncWithCloud((service) => service.updateNote(updatedNote)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.updateNote(updatedNote))
+        .catchError((e) {});
   }
 
+  // Updates all notes when a label is deleted
   Future<void> updateNotesOnLabelDelete(String labelId) async {
     final currentNotes = List<Note>.from(state);
     bool hasChanges = false;
@@ -202,8 +211,8 @@ class Notes extends _$Notes {
 
         // Update storage immediately for each note
         await ref.read(storageServiceProvider).updateNote(updatedNote);
-        _syncWithCloud((service) => service.updateNote(updatedNote)).catchError(
-            (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+        _syncWithCloud((service) => service.updateNote(updatedNote))
+            .catchError((e) {});
       }
     }
 
@@ -212,7 +221,7 @@ class Notes extends _$Notes {
     }
   }
 
-  /// Adds a temporary empty note that can be deleted later if not modified
+  // Adds a temporary empty note that can be deleted later if not modified
   Future<void> addEmptyNote(Note note) async {
     _temporaryNotes.add(note.id);
 
@@ -223,7 +232,7 @@ class Notes extends _$Notes {
     await ref.read(storageServiceProvider).addNote(note);
   }
 
-  /// Cleans up empty note with built-in animation delay
+  // Cleans up empty note with built-in animation delay
   Future<void> cleanupEmptyNote(String id) async {
     // Find the note or return early if not found
     final noteIndex = state.indexWhere((note) => note.id == id);
@@ -241,12 +250,12 @@ class Notes extends _$Notes {
       _temporaryNotes.remove(id);
     } else {
       _temporaryNotes.remove(id);
-      await _syncWithCloud((service) => service.createNote(note)).catchError(
-          (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+      await _syncWithCloud((service) => service.createNote(note))
+          .catchError((e) {});
     }
   }
 
-  // Helper method to update a note and sync
+  // Helper method to update a note and sync with cloud
   Future<void> _updateAndSync(Note note) async {
     final currentNotes = List<Note>.from(state);
     final index = currentNotes.indexWhere((n) => n.id == note.id);
@@ -257,11 +266,10 @@ class Notes extends _$Notes {
     state = currentNotes;
 
     await ref.read(storageServiceProvider).updateNote(note);
-    _syncWithCloud((service) => service.updateNote(note)).catchError(
-        (e) => developer.log('Sync failed: $e', name: 'NotesProvider'));
+    _syncWithCloud((service) => service.updateNote(note)).catchError((e) {});
   }
 
-  // Todo operations
+  // Updates a todo item within a note
   Future<void> updateTodo(
     String noteId,
     String todoId, {
@@ -271,15 +279,11 @@ class Notes extends _$Notes {
   }) async {
     final note = getNote(noteId);
     if (note == null) {
-      developer.log('Cannot update todo: Note not found with id $noteId',
-          name: 'NotesProvider');
       return;
     }
 
     final todoIndex = note.todos.indexWhere((todo) => todo.id == todoId);
     if (todoIndex == -1) {
-      developer.log('Cannot update todo: Todo not found with id $todoId',
-          name: 'NotesProvider');
       return;
     }
 
@@ -290,26 +294,18 @@ class Notes extends _$Notes {
       index: index,
     );
 
-    developer.log(
-        'Updating todo: noteId=$noteId, todoId=$todoId, content=${content ?? "unchanged"}, isDone=${isDone ?? "unchanged"}, index=${index ?? "unchanged"}',
-        name: 'NotesProvider');
-
     final updatedNote = note.copyWith(
       todos: updatedTodos,
       updatedAt: DateTime.now(),
     );
 
-    developer.log('After update, note has ${updatedNote.todos.length} todos',
-        name: 'NotesProvider');
-
     await _updateAndSync(updatedNote);
   }
 
+  // Adds a new todo item to a note
   Future<void> addTodo(String noteId, String content) async {
     final note = getNote(noteId);
     if (note == null) {
-      developer.log('Cannot add todo: Note not found with id $noteId',
-          name: 'NotesProvider');
       return;
     }
 
@@ -318,21 +314,15 @@ class Notes extends _$Notes {
       index: note.todos.length,
     );
 
-    developer.log(
-        'Adding todo: noteId=$noteId, todoId=${newTodo.id}, content=$content',
-        name: 'NotesProvider');
-
     final updatedNote = note.copyWith(
       todos: [...note.todos, newTodo],
       updatedAt: DateTime.now(),
     );
 
-    developer.log('After adding, note has ${updatedNote.todos.length} todos',
-        name: 'NotesProvider');
-
     await _updateAndSync(updatedNote);
   }
 
+  // Deletes a todo item from a note
   Future<void> deleteTodo(String noteId, String todoId) async {
     final note = getNote(noteId);
     if (note == null) return;
@@ -353,6 +343,7 @@ class Notes extends _$Notes {
     await _updateAndSync(updatedNote);
   }
 
+  // Reorders todo items within a note
   Future<void> reorderTodos(String noteId, int oldIndex, int newIndex) async {
     final note = getNote(noteId);
     if (note == null) return;
@@ -378,8 +369,7 @@ class Notes extends _$Notes {
 
 /// Provider for a single note by ID, automatically updates when the note changes
 @riverpod
-Note singleNote(ref, String noteId, NoteType? noteType) {
-  debugPrint('provider called');
+Note singleNote(Ref ref, String noteId, NoteType? noteType) {
   final allNotes = ref.watch(notesProvider);
   return allNotes.firstWhere(
     (note) => note.id == noteId,

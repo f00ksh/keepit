@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/services/hive_stoarge_service.dart';
 import 'package:keepit/domain/repositories/auth_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,17 +10,17 @@ import '../repositories/note_repository_impl.dart';
 part 'service_providers.g.dart';
 
 @riverpod
-StorageService storageService(ref) {
+StorageService storageService(Ref ref) {
   throw UnimplementedError('Should be overridden in main');
 }
 
 @riverpod
-SupabaseService supabaseService(ref) {
+SupabaseService supabaseService(Ref ref) {
   throw UnimplementedError('Should be overridden in main');
 }
 
 @riverpod
-SyncService syncService(ref) {
+SyncService syncService(Ref ref) {
   return SyncService(
     ref.watch(storageServiceProvider),
     ref.watch(supabaseServiceProvider),
@@ -27,13 +28,13 @@ SyncService syncService(ref) {
 }
 
 @Riverpod(keepAlive: true)
-NoteRepositoryImpl noteRepository(ref) {
+NoteRepositoryImpl noteRepository(Ref ref) {
   final storageService = ref.watch(storageServiceProvider);
   return NoteRepositoryImpl(storageService);
 }
 
 @Riverpod(keepAlive: true)
-AuthServiceRepository authService(ref) {
+AuthServiceRepository authService(Ref ref) {
   throw UnimplementedError('Should be overridden in main');
 }
 

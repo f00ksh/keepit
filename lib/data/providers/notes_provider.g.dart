@@ -6,7 +6,7 @@ part of 'notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$singleNoteHash() => r'5eb77fc5eb5037a7ad243bfd88afb86543aaeebc';
+String _$singleNoteHash() => r'90d550803d5c51730a98c5868eee274287a4a495';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -186,7 +186,7 @@ class _SingleNoteProviderElement extends AutoDisposeProviderElement<Note>
   NoteType? get noteType => (origin as SingleNoteProvider).noteType;
 }
 
-String _$notesHash() => r'4e8115e1a320d0f9ea806c14637d88e4af5665a7';
+String _$notesHash() => r'a7814683319a541297ef7f3328ee81a084012084';
 
 /// See also [Notes].
 @ProviderFor(Notes)

@@ -10,7 +10,7 @@ class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback? onTap;
   final Function(DismissDirection)? onDismissed;
-
+  final bool isSelected;
   final bool enableDismiss;
 
   const NoteCard({
@@ -18,6 +18,7 @@ class NoteCard extends StatelessWidget {
     required this.note,
     this.onTap,
     this.onDismissed,
+    this.isSelected = false,
     this.enableDismiss = false,
   });
 
@@ -49,18 +50,23 @@ class NoteCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        // Add border when there's no wallpaper and no color (or color is surface color)
-        side: (wallpaperPath == null &&
-                (note.colorIndex == AppTheme.noColorIndex ||
-                    noteColor == Theme.of(context).colorScheme.surface))
+        // Add border when selected or when there's no wallpaper and no color
+        side: isSelected
             ? BorderSide(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.3))
-            : BorderSide.none,
+                color: Theme.of(context).colorScheme.primary,
+                width: 3.0,
+              )
+            : (wallpaperPath == null &&
+                    (note.colorIndex == AppTheme.noColorIndex ||
+                        noteColor == Theme.of(context).colorScheme.surface))
+                ? BorderSide(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.3))
+                : BorderSide.none,
       ),
-      child: InkWell(
+      child: GestureDetector(
         onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 50),
@@ -69,7 +75,7 @@ class NoteCard extends StatelessWidget {
                 ? BoxDecoration(
                     image: DecorationImage(
                       image: wallpaperImage,
-                      fit: BoxFit.fill,
+                      fit: BoxFit.cover,
                       alignment: Alignment.center,
                     ),
                   )
@@ -115,7 +121,7 @@ class NoteCard extends StatelessWidget {
       return Hero(
         tag: heroTag,
         child: Dismissible(
-          direction: DismissDirection.endToStart,
+          direction: DismissDirection.horizontal,
           key: ValueKey('dismiss_${note.id}'),
           onDismissed: onDismissed,
           child: cardContent,

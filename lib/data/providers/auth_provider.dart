@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/data/providers/service_providers.dart';
 import 'package:keepit/data/seed/initial_notes.dart';
@@ -113,18 +114,15 @@ class Auth extends _$Auth {
       await notesBox.put(updatedNote.id, updatedNote);
     }
   }
-
-  // Convenience getters
-  AppUser? get currentUser => state.valueOrNull;
 }
 
 @riverpod
-AppUser? currentUser(ref) {
+AppUser? currentUser(Ref ref) {
   return ref.watch(authProvider).valueOrNull;
 }
 
 @riverpod
-String? authError(ref) {
+String? authError(Ref ref) {
   return ref.watch(authProvider).whenOrNull(
         error: (error, _) => error.toString(),
       );

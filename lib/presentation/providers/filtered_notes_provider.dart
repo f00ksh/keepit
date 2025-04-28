@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/note.dart';
 import '../../data/providers/notes_provider.dart';
@@ -5,25 +6,25 @@ import '../../data/providers/notes_provider.dart';
 part 'filtered_notes_provider.g.dart';
 
 @riverpod
-List<Note> favoriteNotes(ref) {
+List<Note> favoriteNotes(Ref ref) {
   final notes = ref.watch(notesProvider);
   return notes.where((Note note) => note.isFavorite).toList();
 }
 
 @riverpod
-List<Note> archivedNotes(ref) {
+List<Note> archivedNotes(Ref ref) {
   final notes = ref.watch(notesProvider);
   return notes.where((Note note) => note.isArchived).toList();
 }
 
 @riverpod
-List<Note> trashedNotes(ref) {
+List<Note> trashedNotes(Ref ref) {
   final notes = ref.watch(notesProvider);
   return notes.where((Note note) => note.isDeleted).toList();
 }
 
 @riverpod
-List<Note> mainNotes(ref) {
+List<Note> mainNotes(Ref ref) {
   final notes = ref.watch(notesProvider);
   return notes
       .where((Note note) => !note.isDeleted && !note.isArchived)
@@ -31,7 +32,7 @@ List<Note> mainNotes(ref) {
 }
 
 @riverpod
-List<Note> labelNotes(ref, String labelId) {
+List<Note> labelNotes(Ref ref, String labelId) {
   final notes = ref.watch(notesProvider);
   return notes.where((note) => note.labelIds.contains(labelId)).toList();
 }

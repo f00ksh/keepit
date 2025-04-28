@@ -102,9 +102,6 @@ class DragContainer<T extends DragListItem> extends StatefulWidget {
   /// Optional decoration for the dragged child
   final BoxDecoration? dragChildBoxDecoration;
 
-  /// Whether to enable shaking animation during dragging
-  final bool enableShakeAnimation;
-
   /// Callbacks for various drag events
   final DragCallbacks<T> dragCallbacks;
 
@@ -125,7 +122,6 @@ class DragContainer<T extends DragListItem> extends StatefulWidget {
     this.isDrag = true,
     this.isNotDragList,
     this.dragChildBoxDecoration,
-    this.enableShakeAnimation = false,
     this.dragCallbacks = const DragCallbacks(),
     super.key,
   });
@@ -218,6 +214,7 @@ class _DragContainerState<T extends DragListItem> extends State<DragContainer> {
       _sizeMap.clear();
 
       // Force a rebuild to ensure sizes are remeasured quickly
+      //! check here
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() {});
       });

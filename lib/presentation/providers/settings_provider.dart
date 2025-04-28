@@ -77,6 +77,4 @@ class Settings extends _$Settings {
       state = AsyncError(e, stack);
     }
   }
-
-  bool get isSyncEnabled => state.valueOrNull?.syncEnabled ?? false;
 }
