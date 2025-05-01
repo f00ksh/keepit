@@ -6,7 +6,7 @@ part of 'labels_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$labelByIdHash() => r'3f2f1c9db772771988a127dc7479068510430223';
+String _$labelByIdHash() => r'b5d2fd74af50da5ad1c85511d617bf7e35ffcc93';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -156,7 +156,7 @@ class _LabelByIdProviderElement extends AutoDisposeProviderElement<Label?>
   String get id => (origin as LabelByIdProvider).id;
 }
 
-String _$notesByLabelIdHash() => r'2e9b3fa0a3891e7f3d8f1ce290ab0b56ca5673cd';
+String _$notesByLabelIdHash() => r'01a2ce2fcbbfef6b61ab2ee55ca817fd507cbde5';
 
 /// See also [notesByLabelId].
 @ProviderFor(notesByLabelId)

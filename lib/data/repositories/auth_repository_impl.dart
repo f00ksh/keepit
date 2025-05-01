@@ -69,23 +69,36 @@ class AuthRepositoryImpl implements AuthServiceRepository {
 
       if (!response) throw Exception('Google sign in failed');
 
-      // Wait for session to be available
-      await Future.delayed(const Duration(seconds: 2));
+      // Wait for session to be available - increase timeout and add retry logic
+      int attempts = 0;
+      AppUser? appUser;
 
-      final user = _client.auth.currentUser;
-      if (user == null) throw Exception('No user after Google sign in');
+      while (attempts < 3 && appUser == null) {
+        await Future.delayed(const Duration(seconds: 2));
+        final user = _client.auth.currentUser;
 
-      debugPrint('Google sign in successful. Metadata: ${user.userMetadata}');
+        if (user != null) {
+          debugPrint(
+              'Google sign in successful. Metadata: ${user.userMetadata}');
 
-      final appUser = AppUser.fromJson({
-        'id': user.id,
-        'email': user.email,
-        'user_metadata': user.userMetadata,
-        'is_anonymous': false,
-      });
+          appUser = AppUser.fromJson({
+            'id': user.id,
+            'email': user.email,
+            'user_metadata': user.userMetadata,
+            'is_anonymous': false,
+          });
 
-      debugPrint('Created AppUser with photo: ${appUser.photoUrl}');
-      return appUser;
+          // Create or update user profile
+          await _createOrUpdateUserProfile(appUser);
+          debugPrint('Created AppUser with photo: ${appUser.photoUrl}');
+          return appUser;
+        }
+
+        attempts++;
+        debugPrint('Attempt $attempts: Waiting for Google auth to complete...');
+      }
+
+      throw Exception('No user after Google sign in after multiple attempts');
     } catch (e) {
       debugPrint('Google sign in error: $e');
       throw Exception('Failed to sign in with Google: $e');

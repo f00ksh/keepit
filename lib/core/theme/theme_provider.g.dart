@@ -6,7 +6,7 @@ part of 'theme_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appThemeModeHash() => r'40d275eccd927e98caa140a3f4301938b4e7ee46';
+String _$appThemeModeHash() => r'b5d04ef0e2e3b214dc059a642de729545978e0f0';
 
 /// See also [appThemeMode].
 @ProviderFor(appThemeMode)
@@ -22,7 +22,7 @@ final appThemeModeProvider = AutoDisposeProvider<ThemeMode>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AppThemeModeRef = AutoDisposeProviderRef<ThemeMode>;
-String _$useDynamicColorsHash() => r'c6309f921d4e62d00e374c31af189ec827cc5e93';
+String _$useDynamicColorsHash() => r'eaf5c8f5d18a5974cd93f206760263ba72825aab';
 
 /// See also [useDynamicColors].
 @ProviderFor(useDynamicColors)
@@ -39,7 +39,7 @@ final useDynamicColorsProvider = AutoDisposeProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UseDynamicColorsRef = AutoDisposeProviderRef<bool>;
-String _$accentColorIndexHash() => r'0c396a18c04be6ec4d5371fb7efa84b9639221ca';
+String _$accentColorIndexHash() => r'dc92e62cc78d81cd1172ae8e6830c54258e668fc';
 
 /// See also [accentColorIndex].
 @ProviderFor(accentColorIndex)

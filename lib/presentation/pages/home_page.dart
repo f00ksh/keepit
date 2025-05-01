@@ -3,14 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/data/providers/labels_provider.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
-import 'package:keepit/presentation/providers/fab_provider.dart';
 import 'package:keepit/presentation/providers/filtered_notes_provider.dart';
-import 'package:keepit/presentation/providers/multi_select_provider.dart';
 import 'package:keepit/presentation/providers/navigation_provider.dart';
 import 'package:keepit/presentation/providers/selected_label_provider.dart';
 import 'package:keepit/presentation/widgets/app_drawer.dart';
-import 'package:keepit/presentation/widgets/expandable_fab.dart';
-import 'package:keepit/presentation/widgets/multi_select_app_bar.dart';
 
 import 'package:keepit/presentation/widgets/note_grid.dart';
 import 'package:keepit/presentation/widgets/reorderable_grid.dart';
@@ -37,7 +33,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   final FocusNode _searchFocusNode = FocusNode();
   late bool _showNavigationDrawer;
   late final ScrollController _scrollController;
-  final GlobalKey<ExpandableFabState> _fabKey = GlobalKey<ExpandableFabState>();
 
   @override
   void didChangeDependencies() {
@@ -94,76 +89,24 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final multiSelectState = ref.watch(multiSelectNotifierProvider);
     final screenIndex = ref.watch(navigationProvider);
     final selectedLabel = ref.watch(selectedLabelProvider);
-    final isExpanded = ref.watch(fabExpansionProvider);
     final notes = _getNotesForIndex(ref, screenIndex);
-    // Create a dimming overlay widget with Consumer
-    final dimmingOverlay = Consumer(
-      builder: (context, ref, _) {
-        final isExpanded = ref.watch(fabExpansionProvider);
-
-        return isExpanded
-            ? Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {
-                    if (_fabKey.currentState != null) {
-                      _fabKey.currentState!.toggle();
-                    }
-                  },
-                  onVerticalDragStart: (_) {
-                    if (_fabKey.currentState != null) {
-                      _fabKey.currentState!.toggle();
-                    }
-                  },
-                  onHorizontalDragStart: (_) {
-                    if (_fabKey.currentState != null) {
-                      _fabKey.currentState!.toggle();
-                    }
-                  },
-                  onVerticalDragEnd: (details) {
-                    if (details.primaryVelocity! > 0 &&
-                        _fabKey.currentState != null) {
-                      _fabKey.currentState!.toggle();
-                    }
-                  },
-                  child: AnimatedOpacity(
-                    opacity: 0.65,
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      color: Colors.black.withValues(alpha: 0.3),
-                    ),
-                  ),
-                ),
-              )
-            : const SizedBox.shrink();
-      },
-    );
 
     final body = AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: isExpanded
-            ? Colors.black.withValues(alpha: 0.65)
-            : Colors.transparent,
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
       ),
-      child: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              multiSelectState.isMultiSelectMode
-                  ? MultiSelectAppBar()
-                  : AppSearchBar(),
-              notes.isEmpty
-                  ? SliverEmptyState(
-                      message: _getEmptyMessage(screenIndex),
-                      icon: _getEmptyIcon(screenIndex),
-                    )
-                  : _buildGridForIndex(screenIndex, notes),
-            ],
-          ),
-          dimmingOverlay,
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          AppSearchBar(),
+          notes.isEmpty
+              ? SliverEmptyState(
+                  message: _getEmptyMessage(screenIndex),
+                  icon: _getEmptyIcon(screenIndex),
+                )
+              : _buildGridForIndex(screenIndex, notes),
         ],
       ),
     );
@@ -177,9 +120,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         toolbarHeight: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: isExpanded
-              ? Brightness.light
-              : Theme.of(context).brightness == Brightness.dark
+          statusBarIconBrightness:
+              Theme.of(context).brightness == Brightness.dark
                   ? Brightness.light
                   : Brightness.dark,
         ),
@@ -222,20 +164,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             )
           : body,
       floatingActionButton: screenIndex == 0 && selectedLabel == null
-          ? ExpandableFab(
-              key: _fabKey,
-              onTextNotePressed: () {
+          ? FloatingActionButton(
+              heroTag: 'text_note_fab',
+              onPressed: () {
                 _createNote(
                   context,
-                  noteType: NoteType.text,
                 );
               },
-              onTodoNotePressed: () {
-                _createNote(
-                  context,
-                  noteType: NoteType.todo,
-                );
-              },
+              child: const Icon(Icons.add),
             )
           : null,
     );
@@ -253,7 +189,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   IconData _getEmptyIcon(int index) {
     return switch (index) {
-      0 => Icons.note_outlined,
+      0 => Icons.lightbulb_outline,
       1 => Icons.favorite_outline,
       2 => Icons.archive_outlined,
       3 => Icons.delete_outline,
@@ -261,8 +197,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     };
   }
 
-  Future<void> _createNote(BuildContext context,
-      {required NoteType noteType}) async {
+  Future<void> _createNote(
+    BuildContext context,
+  ) async {
     final noteId = const Uuid().v4();
     final newNote = Note(
       id: noteId,
@@ -271,7 +208,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       colorIndex: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      noteType: noteType,
     );
 
     if (!mounted) return;
@@ -285,9 +221,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       AppRoutes.addNote,
       arguments: {
         'noteId': noteId,
-        'heroTag':
-            noteType == NoteType.text ? 'text_note_fab' : 'todo_note_fab',
-        'initialNoteType': noteType,
+        'heroTag': 'text_note_fab',
       },
     );
   }

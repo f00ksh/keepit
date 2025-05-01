@@ -69,7 +69,6 @@ class Auth extends _$Auth {
       if (user.previousAnonymousId != null) {
         await _migrateAnonymousData(user.previousAnonymousId!, user.id);
       }
-
       state = AsyncData(user);
     } catch (e, stack) {
       state = AsyncError(e, stack);

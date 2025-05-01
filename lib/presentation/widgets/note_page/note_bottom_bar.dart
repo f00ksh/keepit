@@ -6,6 +6,7 @@ class NoteBottomBar extends StatelessWidget {
   final VoidCallback onColorPick;
   final VoidCallback onMoreOptions;
   final bool isTransparent;
+  final VoidCallback? onNoteTypeChange;
 
   const NoteBottomBar({
     super.key,
@@ -13,6 +14,7 @@ class NoteBottomBar extends StatelessWidget {
     required this.onColorPick,
     required this.onMoreOptions,
     required this.isTransparent,
+    this.onNoteTypeChange,
   });
 
   @override
@@ -23,9 +25,18 @@ class NoteBottomBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.color_lens_outlined),
-            onPressed: onColorPick,
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.color_lens_outlined),
+                onPressed: onColorPick,
+              ),
+              if (onNoteTypeChange != null)
+                IconButton(
+                  icon: const Icon(Icons.note_alt_outlined),
+                  onPressed: onNoteTypeChange,
+                ),
+            ],
           ),
           Text(
             'Edited ${_formatEditedDate(note.updatedAt)}',

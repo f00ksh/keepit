@@ -147,23 +147,23 @@ class Note {
   }
 
   factory Note.fromJson(Map<String, dynamic> json) {
-    // Determine note type from json or infer based on content if not available
-    NoteType type = NoteType.text;
-    if (json.containsKey('note_type')) {
-      // If the note_type is present in the JSON, use it
-      type = NoteType.values[json['note_type'] as int];
-    } else {
-      // Otherwise infer from content/todos
-      final todos = (json['todos'] as List?)
-              ?.map((e) => TodoItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
+    // // Determine note type from json or infer based on content if not available
+    // NoteType type = NoteType.text;
+    // if (json.containsKey('note_type')) {
+    //   // If the note_type is present in the JSON, use it
+    //   type = NoteType.values[json['note_type'] as int];
+    // } else {
+    //   // Otherwise infer from content/todos
+    //   final todos = (json['todos'] as List?)
+    //           ?.map((e) => TodoItem.fromJson(e as Map<String, dynamic>))
+    //           .toList() ??
+    //       [];
 
-      final content = json['content'] as String? ?? '';
-      type = (todos.isEmpty || (content.isNotEmpty && todos.isEmpty))
-          ? NoteType.text
-          : NoteType.todo;
-    }
+    //   final content = json['content'] as String? ?? '';
+    //   type = (todos.isEmpty || (content.isNotEmpty && todos.isEmpty))
+    //       ? NoteType.text
+    //       : NoteType.todo;
+    // }
 
     return Note(
       id: json['id'],
@@ -185,7 +185,7 @@ class Note {
               .toList() ??
           [],
       deltaContent: json['delta_content'] ?? '',
-      noteType: type,
+      noteType: NoteType.values[json['note_type'] as int],
     );
   }
 }

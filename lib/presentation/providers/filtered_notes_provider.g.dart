@@ -6,7 +6,7 @@ part of 'filtered_notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$favoriteNotesHash() => r'5451cc8f727c5c3bd3bdd5cd392663d5aee40991';
+String _$favoriteNotesHash() => r'6b4213bad945cb2c4d49ea67fdbc79446942eac1';
 
 /// See also [favoriteNotes].
 @ProviderFor(favoriteNotes)
@@ -23,7 +23,7 @@ final favoriteNotesProvider = AutoDisposeProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FavoriteNotesRef = AutoDisposeProviderRef<List<Note>>;
-String _$archivedNotesHash() => r'48cec73509cc8085472f2291f443f62118970e04';
+String _$archivedNotesHash() => r'b99a81e91c9ca0dc7bc16d831e61b7bc5dc5ea6d';
 
 /// See also [archivedNotes].
 @ProviderFor(archivedNotes)
@@ -40,7 +40,7 @@ final archivedNotesProvider = AutoDisposeProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ArchivedNotesRef = AutoDisposeProviderRef<List<Note>>;
-String _$trashedNotesHash() => r'86a92f4e3b7c2f8ff18acaed1022e0985fac3183';
+String _$trashedNotesHash() => r'ac70ecdcf8835c1d2273cc0052d921511032315d';
 
 /// See also [trashedNotes].
 @ProviderFor(trashedNotes)
@@ -56,7 +56,7 @@ final trashedNotesProvider = AutoDisposeProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TrashedNotesRef = AutoDisposeProviderRef<List<Note>>;
-String _$mainNotesHash() => r'26292691110cb4d81ada3b64021bc116df2531c8';
+String _$mainNotesHash() => r'bfb74b11105920adc41610f5e3c53713631482ff';
 
 /// See also [mainNotes].
 @ProviderFor(mainNotes)
@@ -72,7 +72,7 @@ final mainNotesProvider = AutoDisposeProvider<List<Note>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MainNotesRef = AutoDisposeProviderRef<List<Note>>;
-String _$labelNotesHash() => r'e39a16bba58fd5e745afbd93ed506032dab57eae';
+String _$labelNotesHash() => r'1a042e30de9ac0abb2dc31ef414ebad99ad6f805';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -44,8 +44,15 @@ class ReorderableGrid extends ConsumerWidget {
             ),
           ),
           // Pinned notes grid
-          _buildGrid(context, ref, pinnedNotes, crossAxisCount, true,
-              positionChanged, leftPosition),
+          _buildGrid(
+            context,
+            ref,
+            pinnedNotes,
+            crossAxisCount,
+            true,
+            positionChanged,
+            leftPosition,
+          ),
         ],
 
         // Only show unpinned section header if there are pinned notes
@@ -142,6 +149,7 @@ class ReorderableGrid extends ConsumerWidget {
           }
           // Reset the flag
           positionChanged = false;
+          leftPosition = false;
         },
       ),
       edgeScrollSpeedMilliseconds: 300,

@@ -15,7 +15,10 @@ class LoginPage extends ConsumerWidget {
         );
       } else if (next.value != null) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(
+              builder: (_) => const HomePage(
+                    initialIndex: 0,
+                  )),
         );
       }
     });

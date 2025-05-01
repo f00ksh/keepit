@@ -68,7 +68,9 @@ class _WallpaperPickerContentState
 
   @override
   Widget build(BuildContext context) {
-    final note = ref.watch(singleNoteProvider(widget.noteId, null));
+    final note = ref.watch(singleNoteProvider(
+      widget.noteId,
+    ));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final wallpaperAssets =
         isDark ? AppTheme.darkWallpaperAssets : AppTheme.lightWallpaperAssets;
@@ -95,8 +97,7 @@ class _WallpaperPickerContentState
             final wallpaperImage = wallpaperAsset != null
                 ? ResizeImage(
                     AssetImage(wallpaperAsset),
-                    width: 200,
-                    height: 200,
+                    width: 100,
                   )
                 : null;
             // Precache the image if it exists
@@ -149,8 +150,9 @@ class _WallpaperPickerContentState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               image: DecorationImage(
+                                alignment: Alignment.bottomRight,
                                 image: wallpaperImage!,
-                                fit: BoxFit.fill,
+                                fit: BoxFit.cover,
                                 filterQuality: FilterQuality.low,
                               ),
                             ),

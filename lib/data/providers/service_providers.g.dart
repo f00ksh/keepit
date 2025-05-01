@@ -6,7 +6,7 @@ part of 'service_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$storageServiceHash() => r'd7e537bf211a689aa2ef53327248bec5c24e90b8';
+String _$storageServiceHash() => r'e30443dddbc92b9334752302cbc4b11b941ed2c7';
 
 /// See also [storageService].
 @ProviderFor(storageService)
@@ -23,7 +23,7 @@ final storageServiceProvider = AutoDisposeProvider<StorageService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef StorageServiceRef = AutoDisposeProviderRef<StorageService>;
-String _$supabaseServiceHash() => r'30f9b1f39ced6051d788d7aa2a9e4047f94bf635';
+String _$supabaseServiceHash() => r'db134a6f26ee4542c8fe2a97a931221a08c9e980';
 
 /// See also [supabaseService].
 @ProviderFor(supabaseService)
@@ -40,7 +40,7 @@ final supabaseServiceProvider = AutoDisposeProvider<SupabaseService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SupabaseServiceRef = AutoDisposeProviderRef<SupabaseService>;
-String _$syncServiceHash() => r'8e4fa3c78e83951aef769a2d23962b49b6c95a83';
+String _$syncServiceHash() => r'4292d19f46c93157fcbf8eec2cef75fce13490c1';
 
 /// See also [syncService].
 @ProviderFor(syncService)
@@ -56,7 +56,7 @@ final syncServiceProvider = AutoDisposeProvider<SyncService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SyncServiceRef = AutoDisposeProviderRef<SyncService>;
-String _$noteRepositoryHash() => r'694c01d84e27a524f776a0ecef59ae54378a1483';
+String _$noteRepositoryHash() => r'eb93b0ea9d1d4a52a7c76ad4238b7ca96945929e';
 
 /// See also [noteRepository].
 @ProviderFor(noteRepository)
@@ -73,7 +73,7 @@ final noteRepositoryProvider = Provider<NoteRepositoryImpl>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef NoteRepositoryRef = ProviderRef<NoteRepositoryImpl>;
-String _$authServiceHash() => r'243440cd7ee69b7b833190c7d8d3f3a99f38f4e9';
+String _$authServiceHash() => r'c04e89e0fb849b79be38a2980fbc8a979ee4d6cd';
 
 /// See also [authService].
 @ProviderFor(authService)

@@ -6,7 +6,7 @@ part of 'auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentUserHash() => r'16bd8c31e191e4fbadd16a5e659d303a9c881d07';
+String _$currentUserHash() => r'9f318ea41548045510f5b4cf3ec5782f00973904';
 
 /// See also [currentUser].
 @ProviderFor(currentUser)
@@ -22,7 +22,7 @@ final currentUserProvider = AutoDisposeProvider<AppUser?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CurrentUserRef = AutoDisposeProviderRef<AppUser?>;
-String _$authErrorHash() => r'32c8a798df8491f1a5943268e87cdf433c563783';
+String _$authErrorHash() => r'cbe8eee51019b602603f6132d291a22312fe2e9a';
 
 /// See also [authError].
 @ProviderFor(authError)
@@ -38,7 +38,7 @@ final authErrorProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthErrorRef = AutoDisposeProviderRef<String?>;
-String _$authHash() => r'be2a9d97589e37aa74a8386d0a01c3fd5cbccb01';
+String _$authHash() => r'e4bbeb4815ca75aa0420b2f8882ce05fbcb26e95';
 
 /// See also [Auth].
 @ProviderFor(Auth)

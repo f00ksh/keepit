@@ -34,8 +34,7 @@ class NoteCard extends StatelessWidget {
     final wallpaperImage = wallpaperPath != null
         ? ResizeImage(
             AssetImage(wallpaperPath),
-            width: 600,
-            height: 800,
+            width: 200,
           )
         : null;
 
@@ -54,7 +53,7 @@ class NoteCard extends StatelessWidget {
         side: isSelected
             ? BorderSide(
                 color: Theme.of(context).colorScheme.primary,
-                width: 3.0,
+                width: 4.0,
               )
             : (wallpaperPath == null &&
                     (note.colorIndex == AppTheme.noColorIndex ||
@@ -66,7 +65,7 @@ class NoteCard extends StatelessWidget {
                         .withValues(alpha: 0.3))
                 : BorderSide.none,
       ),
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 50),
@@ -75,8 +74,7 @@ class NoteCard extends StatelessWidget {
                 ? BoxDecoration(
                     image: DecorationImage(
                       image: wallpaperImage,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
+                      fit: BoxFit.fill,
                     ),
                   )
                 : null,

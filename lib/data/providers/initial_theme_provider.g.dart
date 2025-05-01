@@ -6,7 +6,7 @@ part of 'initial_theme_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$initialThemeModeHash() => r'0f001fade5f94096893742f1b8b581c17277e080';
+String _$initialThemeModeHash() => r'62e6ff985c5c3b84e71f87fa2115fb635d6a6264';
 
 /// A provider that loads the theme mode synchronously from Hive storage
 /// This is used to set the initial theme before the main settings finish loading

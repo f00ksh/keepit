@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/domain/models/todo_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -32,6 +33,7 @@ class Notes extends _$Notes {
 
   // Adds a new note to the state and storage
   Future<void> addNote(Note note) async {
+    debugPrint('Adding new note: ${note.id}, type: ${note.noteType}');
     // If it's a todo note, add an initial empty todo
     final noteToAdd = note.noteType == NoteType.todo
         ? note.copyWith(todos: [
@@ -53,6 +55,8 @@ class Notes extends _$Notes {
 
   // Updates an existing note with new content
   Future<void> updateNote(String id, Note updatedNote) async {
+    debugPrint(
+        'Updating note: ${updatedNote.id}, type: ${updatedNote.noteType}');
     // First save to storage
     await ref.read(storageServiceProvider).updateNote(updatedNote);
     // Then update state
@@ -369,7 +373,10 @@ class Notes extends _$Notes {
 
 /// Provider for a single note by ID, automatically updates when the note changes
 @riverpod
-Note singleNote(Ref ref, String noteId, NoteType? noteType) {
+Note singleNote(
+  Ref ref,
+  String noteId,
+) {
   final allNotes = ref.watch(notesProvider);
   return allNotes.firstWhere(
     (note) => note.id == noteId,
@@ -382,7 +389,6 @@ Note singleNote(Ref ref, String noteId, NoteType? noteType) {
       colorIndex: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      noteType: noteType ?? NoteType.text,
     ),
   );
 }

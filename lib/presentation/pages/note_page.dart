@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keepit/core/routes/app_router.dart';
 import 'package:keepit/core/theme/app_theme.dart';
 import 'package:keepit/data/providers/notes_provider.dart';
 import 'package:keepit/domain/models/note.dart';
+import 'package:keepit/domain/models/todo_item.dart';
 import 'package:keepit/presentation/providers/note_action_provider.dart';
 import 'package:keepit/presentation/widgets/label_chip.dart';
 import 'package:keepit/presentation/widgets/theme_color_picker.dart';
@@ -17,13 +17,11 @@ import 'package:keepit/core/theme/text_styles.dart';
 class NotePage extends ConsumerStatefulWidget {
   final String noteId;
   final String heroTag;
-  final NoteType? initialNoteType;
 
   const NotePage({
     super.key,
     required this.noteId,
     required this.heroTag,
-    this.initialNoteType,
   });
 
   @override
@@ -46,8 +44,7 @@ class _NotePageState extends ConsumerState<NotePage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Initialize text controllers
-      final note = ref.read(singleNoteProvider(
-          widget.noteId, widget.initialNoteType ?? NoteType.text));
+      final note = ref.read(singleNoteProvider(widget.noteId));
       // Check if mounted before accessing controllers
       if (mounted) {
         _titleController.text = note.title;
@@ -72,12 +69,11 @@ class _NotePageState extends ConsumerState<NotePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      debugPrint(
-          'NotePage build triggered at ${DateTime.now()} for noteId: ${widget.noteId}');
-    }
-    final note = ref.watch(singleNoteProvider(
-        widget.noteId, widget.initialNoteType ?? NoteType.text));
+    debugPrint(
+        'NotePage build triggered at ${DateTime.now()} for noteId: ${widget.noteId} ');
+
+    final note = ref.watch(singleNoteProvider(widget.noteId));
+    debugPrint(note.noteType.toString());
 
     // Get wallpaper asset path if set
     final wallpaperPath =
@@ -87,7 +83,6 @@ class _NotePageState extends ConsumerState<NotePage> {
         ? ResizeImage(
             AssetImage(wallpaperPath),
             width: 600,
-            height: 800,
           )
         : null;
     // Precache the image if it exists
@@ -112,7 +107,6 @@ class _NotePageState extends ConsumerState<NotePage> {
                       ? DecorationImage(
                           image: wallpaperImage,
                           fit: BoxFit.fill,
-                          alignment: Alignment.center,
                         )
                       : null,
                 ),
@@ -129,6 +123,7 @@ class _NotePageState extends ConsumerState<NotePage> {
                       note: note,
                       onColorPick: () => _showCustomizationOptions(note),
                       onMoreOptions: () => _showMoreOptions(note),
+                      onNoteTypeChange: () => _showNoteTypeOptions(note),
                       isTransparent: note.wallpaperIndex != 0,
                     ),
                   ],
@@ -147,10 +142,10 @@ class _NotePageState extends ConsumerState<NotePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildTitleField(),
-          if (widget.initialNoteType == NoteType.text ||
+          if (note.noteType == NoteType.text ||
               (note.content.isNotEmpty && note.todos.isEmpty))
             _buildContentField(),
-          if (widget.initialNoteType == NoteType.todo || note.todos.isNotEmpty)
+          if (note.noteType == NoteType.todo || note.todos.isNotEmpty)
             NoteTodosSection(
               note: note,
               onChanged: () {
@@ -362,7 +357,7 @@ class _NotePageState extends ConsumerState<NotePage> {
         content: _contentController.text.trim(),
         todos: note.todos,
         updatedAt: DateTime.now(),
-        noteType: widget.initialNoteType,
+        noteType: note.noteType,
       );
 
       await Future.delayed(const Duration(milliseconds: 150));
@@ -537,6 +532,107 @@ class _NotePageState extends ConsumerState<NotePage> {
     );
   }
 
+  // Show a modal bottom sheet with note type options
+  void _showNoteTypeOptions(Note note) {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final currentNote = ref.read(singleNoteProvider(widget.noteId));
+
+          // Get colors based on wallpaper or note color
+          final backgroundColor =
+              currentNote.wallpaperIndex != AppTheme.noWallpaperIndex &&
+                      currentNote.wallpaperIndex != 0
+                  ? getNoteWallpaperColor(context, currentNote.wallpaperIndex)
+                  : getNoteColor(context, currentNote.colorIndex);
+
+          final colorScheme = Theme.of(context).colorScheme;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final handleColor = isDark
+              ? colorScheme.onSurface.withValues(alpha: 0.4)
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: handleColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.text_fields),
+                  title: const Text('Text note'),
+                  selected: currentNote.noteType == NoteType.text,
+                  onTap: () {
+                    if (currentNote.noteType != NoteType.text) {
+                      // Convert to text note
+                      final updatedNote = currentNote.copyWith(
+                        noteType: NoteType.text,
+                        updatedAt: DateTime.now(),
+                      );
+                      ref.read(notesProvider.notifier).updateNote(
+                            currentNote.id,
+                            updatedNote,
+                          );
+                      _hasChanges = true;
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.check_box_outlined),
+                  title: const Text('Todo list'),
+                  selected: currentNote.noteType == NoteType.todo,
+                  onTap: () {
+                    if (currentNote.noteType != NoteType.todo) {
+                      // Convert to todo note
+                      final updatedNote = currentNote.copyWith(
+                        todos: [
+                          TodoItem(
+                            content: '',
+                            index: 0,
+                          )
+                        ],
+                      );
+                      ref.read(notesProvider.notifier).updateNote(
+                            currentNote.id,
+                            updatedNote,
+                          );
+                      _hasChanges = true;
+                      debugPrint('Note type: ${updatedNote.noteType}');
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // Modify this method to show both colors and wallpapers in a single column without divider
   void _showCustomizationOptions(Note note) {
     showModalBottomSheet(
@@ -547,8 +643,7 @@ class _NotePageState extends ConsumerState<NotePage> {
       builder: (context) => Consumer(
         builder: (context, ref, _) {
           ref.watch(notesProvider);
-          final currentNote = ref
-              .read(singleNoteProvider(widget.noteId, widget.initialNoteType));
+          final currentNote = ref.read(singleNoteProvider(widget.noteId));
 
           // Get colors based on wallpaper or note color
           final backgroundColor =
